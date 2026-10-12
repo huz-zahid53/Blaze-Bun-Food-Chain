@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": ".tmp-test",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2020",
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "declaration": false,
+    "incremental": false
+  },
+  "include": [
+    "src/store/useStore.ts",
+    "src/lib/pricing.ts",
+    "src/config/brand.ts",
+    "src/lib/utils.ts",
+    "src/data/menu.ts",
+    "src/data/deals.ts"
+  ]
+}
