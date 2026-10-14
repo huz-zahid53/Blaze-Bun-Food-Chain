@@ -76,6 +76,12 @@ export interface MenuCategory {
   blurb: string;
   icon: CategoryIcon;
   hue: number;
+  /** Path under /public — photorealistic category image. */
+  image?: string;
+  /** Scale factor for the category image inside the circle.
+   *  1 = original size, 0.7 = zoom out, 1.3 = zoom in.
+   *  Defaults to 1 if omitted. */
+  imageScale?: number;
 }
 
 /* ============================================================
@@ -89,6 +95,8 @@ export const categories: MenuCategory[] = [
     blurb: "Smashed on 400°C steel, seared over open flame",
     icon: "burger",
     hue: 18,
+    image: "/categories/signature-burgers.png",
+    imageScale: 3.75,
   },
   {
     id: "flame-grilled-chicken",
@@ -96,6 +104,7 @@ export const categories: MenuCategory[] = [
     blurb: "Marinated 24h, charred over live coals",
     icon: "flame",
     hue: 32,
+    image: "/categories/flame-grilled-chicken.png",
   },
   {
     id: "wings-bites",
@@ -103,6 +112,7 @@ export const categories: MenuCategory[] = [
     blurb: "Tossed in sauce, served blazing hot",
     icon: "drumstick",
     hue: 8,
+    image: "/categories/wings-bites.png",
   },
   {
     id: "sharing-buckets",
@@ -110,6 +120,7 @@ export const categories: MenuCategory[] = [
     blurb: "Built for the table, priced for the crew",
     icon: "bucket",
     hue: 42,
+    image: "/categories/sharing-buckets.png",
   },
   {
     id: "sides-fries",
@@ -117,6 +128,7 @@ export const categories: MenuCategory[] = [
     blurb: "The supporting cast that steals the show",
     icon: "fries",
     hue: 46,
+    image: "/categories/sides-fries.png",
   },
   {
     id: "beverages",
@@ -124,6 +136,7 @@ export const categories: MenuCategory[] = [
     blurb: "Ice-cold, poured tall",
     icon: "cup",
     hue: 200,
+    image: "/categories/beverages.png",
   },
   {
     id: "desserts",
@@ -131,6 +144,7 @@ export const categories: MenuCategory[] = [
     blurb: "Finish molten, finish loud",
     icon: "dessert",
     hue: 340,
+    image: "/categories/desserts.png",
   },
 ];
 
@@ -353,7 +367,7 @@ export const menuItems: MenuItem[] = [
       "Brined, marinated, then grilled over charcoal until the skin blisters. Basted three times with the marinade while it cooks.",
     categoryId: "flame-grilled-chicken",
     price: 890,
-    image: undefined,
+    image: "/media/items/blaze-peri-peri-quarter.jpg",
     hue: 28,
     glyph: "chicken",
     tags: ["bestseller"],
@@ -441,6 +455,7 @@ export const menuItems: MenuItem[] = [
       "Tossed to order in a glaze built from ghost pepper, smoked paprika and honey. The honey is a trap — it makes you go faster.",
     categoryId: "wings-bites",
     price: 950,
+    image: "/media/items/inferno-hot-wings.jpg",
     hue: 4,
     glyph: "wing",
     tags: ["bestseller", "spicy"],
@@ -538,6 +553,7 @@ export const menuItems: MenuItem[] = [
     categoryId: "sharing-buckets",
     price: 3450,
     compareAt: 4320,
+    image: "/media/items/blaze-family-feast.jpg",
     hue: 24,
     glyph: "bucket",
     tags: ["bestseller"],
@@ -622,6 +638,7 @@ export const menuItems: MenuItem[] = [
     story: "The dish that has ruined plain fries for an entire generation of Karachi.",
     categoryId: "sides-fries",
     price: 650,
+    image: "/media/items/blaze-loaded-fries.jpg",
     hue: 30,
     glyph: "fries",
     tags: ["bestseller"],
@@ -743,6 +760,7 @@ export const menuItems: MenuItem[] = [
     story: "Sindhri in peak season, Alphonso the rest of the year. Blended thick, served frosty.",
     categoryId: "beverages",
     price: 380,
+    image: "/media/items/mango-blast.jpg",
     hue: 38,
     glyph: "drink",
     tags: ["bestseller", "veg"],
@@ -796,6 +814,7 @@ export const menuItems: MenuItem[] = [
     story: "Six minutes in the oven, thirty seconds to the table, and one molten centre that waits for nobody.",
     categoryId: "desserts",
     price: 590,
+    image: "/media/items/molten-lava-cake.jpg",
     hue: 350,
     glyph: "dessert",
     tags: ["bestseller"],

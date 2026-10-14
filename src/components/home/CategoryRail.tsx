@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   Beef,
   Boxes,
@@ -56,6 +57,8 @@ export function CategoryRail() {
           className="mt-9"
           itemClassName="w-[132px] sm:w-[150px]"
           label="Menu categories"
+          arrows="mobile-only"
+          arrowPosition="top-[56px] -translate-y-1/2"
         >
           {categories.map((c) => {
             const Icon = iconMap[c.icon];
@@ -64,21 +67,34 @@ export function CategoryRail() {
               <Link key={c.id} href={`/menu#${c.id}`} className="group block">
                 <div className="flex flex-col items-center text-center">
                   <div
-                    className="relative grid h-[112px] w-[112px] place-items-center rounded-full transition-transform duration-500 group-hover:-translate-y-2 sm:h-[128px] sm:w-[128px]"
+                    className="relative grid h-[112px] w-[112px] place-items-center overflow-hidden rounded-full transition-transform duration-500 group-hover:-translate-y-2 sm:h-[128px] sm:w-[128px]"
                     style={{
                       background: `radial-gradient(120% 120% at 30% 20%, hsl(${c.hue} 82% 92%), hsl(${c.hue} 55% 82%))`,
                     }}
                   >
                     {/* Spinning ring */}
                     <span
-                      className="absolute inset-0 rounded-full border-2 border-dashed opacity-40 transition-transform duration-[1400ms] group-hover:rotate-90"
+                      className="absolute inset-0 z-10 rounded-full border-2 border-dashed opacity-40 transition-transform duration-[1400ms] group-hover:rotate-90"
                       style={{ borderColor: `hsl(${c.hue} 70% 45%)` }}
                     />
-                    <Icon
-                      className="h-11 w-11 transition-transform duration-500 group-hover:scale-110 sm:h-12 sm:w-12"
-                      style={{ color: `hsl(${c.hue} 72% 38%)` }}
-                      strokeWidth={1.9}
-                    />
+
+                    {/* Photorealistic image (if provided) — falls back to icon */}
+                    {c.image ? (
+                      <Image
+                        src={c.image}
+                        alt={c.name}
+                        fill
+                        sizes="128px"
+                        unoptimized
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    ) : (
+                      <Icon
+                        className="h-11 w-11 transition-transform duration-500 group-hover:scale-110 sm:h-12 sm:w-12"
+                        style={{ color: `hsl(${c.hue} 72% 38%)` }}
+                        strokeWidth={1.9}
+                      />
+                    )}
                   </div>
                   <h3 className="t-sub mt-3.5 text-[15px] uppercase tracking-wide text-charcoal transition-colors group-hover:text-ember sm:">
                     {c.name}

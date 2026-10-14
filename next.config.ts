@@ -23,10 +23,16 @@ const nextConfig: NextConfig = {
     if (process.env.NODE_ENV !== "development") return [];
     return [
       {
-        source: "/:path*",
+        source: "/((?!media/).*)",
         headers: [
           { key: "Cache-Control", value: "no-store, max-age=0, must-revalidate" },
           { key: "Pragma", value: "no-cache" },
+        ],
+      },
+      {
+        source: "/media/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
     ];

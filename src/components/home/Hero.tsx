@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight, Flame, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,7 +11,8 @@ import { brand } from "@/config/brand";
 const slides = [
   {
     id: "s1",
-    image: "/media/hero/hero-1.jpg",
+    video: "/media/hero/videos/hero-1.webm",
+    poster: "/media/hero/hero-1.jpg",
     kicker: "Smash season",
     title: ["SMASHED", "ON FLAME"],
     blurb:
@@ -23,7 +23,8 @@ const slides = [
   },
   {
     id: "s2",
-    image: "/media/hero/hero-2.jpg",
+    video: "/media/hero/videos/hero-2.webm",
+    poster: "/media/hero/hero-2.jpg",
     kicker: "24-hour marinade",
     title: ["PERI PERI", "CHARRED"],
     blurb:
@@ -34,7 +35,8 @@ const slides = [
   },
   {
     id: "s3",
-    image: "/media/hero/hero-3.jpg",
+    video: "/media/hero/videos/hero-3.webm",
+    poster: "/media/hero/hero-3.jpg",
     kicker: "Built for the table",
     title: ["FEED", "THE CREW"],
     blurb:
@@ -48,6 +50,42 @@ const slides = [
 export function Hero() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+
+  /* Play the active video, pause and rewind inactive ones smoothly in background */
+  const syncVideos = useCallback(
+    (activeIdx: number) => {
+      videoRefs.current.forEach((v, i) => {
+        if (!v) return;
+        if (i === activeIdx) {
+          // Play immediately without seeking stutter
+          v.play().catch(() => {});
+        } else {
+          v.pause();
+          // Reset to beginning while hidden so it is instantly ready when its turn comes
+          try {
+            v.currentTime = 0;
+          } catch {}
+        }
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    syncVideos(index);
+  }, [index, syncVideos]);
+
+  /* Pause/resume videos when hovering */
+  useEffect(() => {
+    const v = videoRefs.current[index];
+    if (!v) return;
+    if (paused) {
+      v.pause();
+    } else {
+      v.play().catch(() => {});
+    }
+  }, [paused, index]);
 
   useEffect(() => {
     if (paused) return;
@@ -67,34 +105,51 @@ export function Hero() {
     >
       {/* Slides */}
       <div className="relative h-[86vh] min-h-[560px] w-full sm:h-[78vh] lg:h-[calc(100vh-76px)] lg:max-h-[820px]">
-        <AnimatePresence initial={false} mode="sync">
-          <motion.div
-            key={slide.id}
-            initial={{ opacity: 0, scale: 1.08 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.04 }}
-            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0"
-          >
-            <Image
-              src={slide.image}
-              alt={slide.title.join(" ")}
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
-            />
-            {/* Cinematic grade */}
-            <div className="absolute inset-0 bg-gradient-to-r from-charcoal via-charcoal/75 to-charcoal/10" />
-            <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-charcoal/40" />
-            <div
-              className={cn(
-                "absolute inset-0 bg-gradient-to-tr opacity-25 mix-blend-overlay",
-                slide.accent,
-              )}
-            />
-          </motion.div>
-        </AnimatePresence>
+        {/* Render videos with smart preloading and smooth GPU transitions */}
+        {slides.map((s, i) => {
+          const isActive = i === index;
+          const isNext = i === (index + 1) % slides.length;
+          return (
+            <motion.div
+              key={s.id}
+              initial={false}
+              animate={{
+                opacity: isActive ? 1 : 0,
+              }}
+              transition={{ duration: 0.8, ease: "easeInOut" }}
+              className="absolute inset-0 transform-gpu"
+              style={{
+                zIndex: isActive ? 1 : 0,
+                pointerEvents: isActive ? "auto" : "none",
+                willChange: "opacity",
+              }}
+              aria-hidden={!isActive}
+            >
+              <video
+                ref={(el) => {
+                  videoRefs.current[i] = el;
+                }}
+                src={s.video}
+                poster={s.poster}
+                muted
+                loop
+                playsInline
+                autoPlay={i === 0}
+                preload={isActive || isNext ? "auto" : "none"}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              {/* Cinematic grade without GPU-blocking mix-blend modes */}
+              <div className="absolute inset-0 bg-gradient-to-r from-charcoal via-charcoal/75 to-charcoal/15" />
+              <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-charcoal/40" />
+              <div
+                className={cn(
+                  "absolute inset-0 bg-gradient-to-tr opacity-20 pointer-events-none",
+                  s.accent,
+                )}
+              />
+            </motion.div>
+          );
+        })}
 
         {/* Floating embers */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
