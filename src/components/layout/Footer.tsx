@@ -51,26 +51,30 @@ export function Footer() {
 
   return (
     <footer className="relative isolate mt-24 overflow-hidden bg-charcoal text-cream">
-      {/* Relevant Background Photograph (Flame Grill Ambiance) */}
-      <Image
-        src="/media/hero/bg-grill.jpg"
-        alt=""
-        aria-hidden
-        fill
-        sizes="100vw"
-        className="object-cover opacity-30"
-      />
-      {/* Deep legibility wash */}
-      <div className="absolute inset-0 bg-charcoal/88" />
-      <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/80 to-charcoal/70" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.05] grain" />
-      <DotGridOverlay tone="dark" />
+      {/* Background photograph & legibility wash layer */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <Image
+          src="/media/hero/bg-grill.jpg"
+          alt=""
+          aria-hidden
+          fill
+          sizes="100vw"
+          className="object-cover opacity-25"
+        />
+        {/* Deep legibility wash */}
+        <div className="absolute inset-0 bg-charcoal/90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/85 to-charcoal/70" />
+        <div className="absolute inset-0 opacity-[0.05] grain" />
+        <DotGridOverlay tone="dark" />
+      </div>
 
       <SectionDivider tone="dark" />
       <StripeBar />
 
-      {/* Newsletter */}
-      <div className="border-b border-cream/10">
+      {/* Footer Content */}
+      <div className="relative z-10">
+        {/* Newsletter */}
+        <div className="border-b border-cream/10">
         <div className="mx-auto flex max-w-[1400px] flex-col items-start justify-between gap-6 px-4 py-12 sm:px-6 lg:flex-row lg:items-center lg:px-8">
           <div>
             <h3 className="t-section-sm uppercase tracking-wide">
@@ -174,6 +178,7 @@ export function Footer() {
             </nav>
           </div>
         </div>
+      </div>
       </div>
     </footer>
   );

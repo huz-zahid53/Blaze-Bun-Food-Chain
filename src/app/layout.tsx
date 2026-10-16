@@ -70,7 +70,7 @@ export default function RootLayout({
       */}
       <body
         suppressHydrationWarning
-        className="min-h-screen bg-cream font-sans antialiased"
+        className="min-h-screen flex flex-col bg-cream font-sans antialiased"
       >
         {/* Strip bis_skin_checked attrs injected by browser extensions
             (Urban VPN / Bitdefender) before React hydrates. */}
@@ -80,7 +80,7 @@ export default function RootLayout({
         />
         <AppProviders>
           <Header />
-          <main id="main">{children}</main>
+          <main id="main" className="flex-1">{children}</main>
           <Footer />
         </AppProviders>
       </body>
