@@ -3,6 +3,8 @@
 import { create } from "zustand";
 import type { OrderType } from "@/config/brand";
 import { brand } from "@/config/brand";
+import { branches } from "@/data/branches";
+import { findZone } from "@/data/zones";
 import { orderNumber } from "@/lib/utils";
 import { computeTotals, coupons, type Coupon } from "@/lib/pricing";
 
@@ -97,7 +99,15 @@ export interface PlacedOrder {
 export interface RemoteState {
   orderType: OrderType;
   branchId: string | null;
+  /** Selected delivery zone id — `null` for pick-up / catering. */
+  zoneId: string | null;
   city: string;
+  /**
+   * True once the customer has explicitly confirmed a location. Persisted so a
+   * returning visitor is not re-prompted; the store's default branch/city alone
+   * cannot tell "never chose" apart from "chose the DHA branch".
+   */
+  locationConfirmed: boolean;
   lines: CartLine[];
   coupon: Coupon | null;
   tip: number;
@@ -134,7 +144,9 @@ export function serializeRemoteState(s: RemoteState): RemoteState {
   return {
     orderType: s.orderType,
     branchId: s.branchId,
+    zoneId: s.zoneId,
     city: s.city,
+    locationConfirmed: s.locationConfirmed,
     lines: s.lines,
     coupon: s.coupon,
     tip: s.tip,
@@ -161,9 +173,24 @@ interface StoreState {
   /* --- Order context --- */
   orderType: OrderType;
   branchId: string | null;
+  /** Delivery zone id when `orderType === "delivery"`; otherwise `null`. */
+  zoneId: string | null;
   city: string;
+  /** True once the customer has explicitly chosen their location. */
+  locationConfirmed: boolean;
   setOrderType: (t: OrderType) => void;
   setBranch: (id: string | null, city?: string) => void;
+  /**
+   * Commits a fully-resolved location choice in one update. Used by the
+   * location modal so order type, city, branch and delivery zone can never end
+   * up describing different places.
+   */
+  commitLocation: (loc: {
+    orderType: OrderType;
+    city: string;
+    branchId: string | null;
+    zoneId: string | null;
+  }) => void;
 
   /* --- Cart --- */
   lines: CartLine[];
@@ -248,9 +275,31 @@ export const useStore = create<StoreState>()(
     (set, get) => ({
       orderType: "delivery",
       branchId: "bb-dha-karachi",
+      zoneId: null,
       city: "Karachi",
-      setOrderType: (t) => set({ orderType: t }),
-      setBranch: (id, city) => set({ branchId: id, ...(city ? { city } : {}) }),
+      // Nothing is "chosen" yet — this is what lets the app prompt on first
+      // load without mistaking the default branch for a saved selection.
+      locationConfirmed: false,
+      setOrderType: (t) =>
+        set({ orderType: t, ...(t !== "delivery" ? { zoneId: null } : {}) }),
+      // Picking a branch directly (e.g. the locations page) has no delivery
+      // area alongside it, so any previous zone is cleared rather than left
+      // pointing at a branch the customer just moved away from.
+      setBranch: (id, city) =>
+        set({
+          branchId: id,
+          zoneId: null,
+          locationConfirmed: id != null,
+          ...(city ? { city } : {}),
+        }),
+      commitLocation: (loc) =>
+        set({
+          orderType: loc.orderType,
+          city: loc.city,
+          branchId: loc.branchId,
+          zoneId: loc.orderType === "delivery" ? loc.zoneId : null,
+          locationConfirmed: loc.branchId != null || loc.zoneId != null,
+        }),
 
       lines: [],
       coupon: null,
@@ -431,8 +480,30 @@ export const useStore = create<StoreState>()(
         if (remote.orderType === "delivery" || remote.orderType === "pickup" || remote.orderType === "catering") {
           patch.orderType = remote.orderType;
         }
-        if (typeof remote.branchId === "string" || remote.branchId === null) {
-          patch.branchId = remote.branchId;
+        // Revalidate the saved branch/zone against the live catalogue: a branch
+        // that has since closed, or a zone that is no longer serviced, must not
+        // survive a reload. Unknown ids are dropped rather than trusted.
+        if (remote.branchId === null) patch.branchId = null;
+        else if (typeof remote.branchId === "string") {
+          patch.branchId = branches.some((b) => b.id === remote.branchId)
+            ? remote.branchId
+            : null;
+        }
+        if (remote.zoneId === null) patch.zoneId = null;
+        else if (typeof remote.zoneId === "string") {
+          patch.zoneId = findZone(remote.zoneId) ? remote.zoneId : null;
+        }
+        // A valid zone implies its servicing branch, so repair a branch that
+        // was dropped or never stored.
+        if (patch.zoneId && !patch.branchId) {
+          const zone = findZone(patch.zoneId);
+          if (zone) patch.branchId = zone.branchId;
+        }
+        // Only trust a persisted "confirmed" flag if a usable location actually
+        // survived revalidation; otherwise the customer must be prompted again.
+        if (typeof remote.locationConfirmed === "boolean") {
+          const hasLocation = patch.branchId != null || patch.zoneId != null;
+          patch.locationConfirmed = remote.locationConfirmed && hasLocation;
         }
         if (typeof remote.city === "string" && remote.city) patch.city = remote.city;
 

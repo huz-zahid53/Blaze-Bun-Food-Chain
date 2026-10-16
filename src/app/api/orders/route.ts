@@ -39,6 +39,28 @@ export async function POST(req: Request) {
   const orderType = ORDER_TYPES.includes(body?.type) ? body.type : null;
   if (!orderType) return fail(400, "orderType must be delivery, pickup or catering.");
 
+  // --- Location validation: never trust the client's branch/zone choice ---
+  // A pickup/delivery order must point at a real, currently-listed branch, and
+  // any delivery zone it claims must actually be serviced by that branch.
+  const { branches } = await import("@/data/branches");
+  const { findZone } = await import("@/data/zones");
+
+  const branchId = str(body?.branchId, 60) || null;
+  const zoneId = str(body?.zoneId, 80) || null;
+  const cityVal = str(body?.customer?.city, 80) || null;
+
+  const branch = branchId ? branches.find((b) => b.id === branchId) : undefined;
+  if (!branch) return fail(400, "Please choose an available branch before ordering.");
+
+  const zone = findZone(zoneId);
+  if (orderType === "delivery" && zoneId) {
+    if (!zone) return fail(400, "That delivery area is not serviceable.");
+    if (zone.branchId !== branch.id)
+      return fail(400, "The delivery area and branch do not match.");
+    if (cityVal && zone.city !== cityVal)
+      return fail(400, `We don't deliver to ${cityVal} from this branch yet.`);
+  }
+
   const name = str(body?.customer?.name, 120);
   const phone = str(body?.customer?.phone, 32);
   if (name.length < 2) return fail(400, "Customer name is required.");
@@ -133,14 +155,15 @@ export async function POST(req: Request) {
       client_token: token,
       status: "placed",
       order_type: orderType,
-      branch_id: str(body?.branchId, 60) || null,
-      branch_name: str(body?.branchName, 120) || null,
+      branch_id: branch.id,
+      branch_name: str(body?.branchName, 120) || `${branch.name}, ${branch.city}`,
       customer_name: name,
       customer_phone: phone,
       customer_email: str(body?.customer?.email, 160) || null,
       address: str(body?.customer?.address, 300) || null,
-      area: str(body?.customer?.area, 120) || null,
-      city: str(body?.customer?.city, 80) || null,
+      // Prefer the validated zone label over anything the client typed.
+      area: zone?.area ?? (str(body?.customer?.area, 120) || null),
+      city: cityVal ?? branch.city,
       instructions: str(body?.customer?.instructions, 500) || null,
       slot: str(body?.customer?.slot, 60) || null,
       subtotal: totals.subtotal,

@@ -37,7 +37,7 @@ const iconMap: Record<CategoryIcon, typeof Beef> = {
 /** KFC-style "Explore menu" circular category rail. */
 export function CategoryRail() {
   return (
-    <section className="relative overflow-hidden border-b border-charcoal/8 bg-bone/40 py-12 sm:py-16">
+    <section className="relative overflow-hidden border-b border-charcoal/8 bg-bone/40 pt-12 pb-6 sm:pt-16 sm:pb-8">
       {/* Background food ambiance */}
       <Image
         src="/media/hero/bg-spread.jpg"
@@ -77,8 +77,8 @@ export function CategoryRail() {
           className="mt-9"
           itemClassName="w-[132px] sm:w-[150px]"
           label="Menu categories"
-          arrows="mobile-only"
-          arrowPosition="top-[56px] -translate-y-1/2"
+          arrows="all"
+          arrowPosition="top-[56px] sm:top-[64px] -translate-y-1/2"
         >
           {categories.map((c) => {
             const Icon = iconMap[c.icon];

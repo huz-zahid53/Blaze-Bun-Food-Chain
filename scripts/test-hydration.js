@@ -78,6 +78,7 @@ console.log("\n=== PART 1: no localStorage, no persist — first render ===");
   check("isMember is false, not the persisted true", s.isMember, false);
   check("orderType is the default 'delivery', not persisted 'pickup'", s.orderType, "delivery");
   check("city is the default, not persisted 'Lahore'", s.city, "Karachi");
+  check("no location is confirmed on a fresh store", s.locationConfirmed, false);
   check("hydrated is false until the cloud load resolves", s.hydrated, false);
   check("cloudMode starts 'unknown'", s.cloudMode, "unknown");
   check("nothing was written to localStorage", Object.keys(backing).length, 1);
@@ -93,7 +94,7 @@ console.log("\n=== PART 2: applyRemoteState validates what it is given ===");
   // A well-formed remote state lands correctly.
   apply({
     orderType: "pickup",
-    branchId: "bb-clifton",
+    branchId: "bb-clifton-karachi",
     city: "Karachi",
     lines: [{ key: "a", slug: "blaze-signature-smash", name: "Blaze Signature Smash", unitPrice: 1150, qty: 2, hue: 18, glyph: "burger", basePrice: 1150, options: [], addOns: [], categoryId: "signature" }],
     coupon: null,
@@ -104,11 +105,35 @@ console.log("\n=== PART 2: applyRemoteState validates what it is given ===");
   });
   let s = useStore.getState();
   check("valid orderType applied", s.orderType, "pickup");
-  check("valid branchId applied", s.branchId, "bb-clifton");
+  check("valid branchId applied", s.branchId, "bb-clifton-karachi");
   check("valid line applied", s.lines.length, 1);
   check("valid tip applied", s.tip, 100);
   check("valid loyalty applied", s.loyaltyPoints, 340);
   check("valid isMember applied", s.isMember, true);
+
+  // Saved locations are revalidated against the live catalogue.
+  apply({ zoneId: "z-khi-dha-phase-vi" });
+  check("valid zoneId applied", useStore.getState().zoneId, "z-khi-dha-phase-vi");
+
+  apply({ zoneId: "z-retired-forever" });
+  check("unknown zoneId dropped", useStore.getState().zoneId, null);
+
+  apply({ branchId: "bb-not-a-branch" });
+  check("unknown branchId dropped", useStore.getState().branchId, null);
+
+  apply({ branchId: null, zoneId: "z-khi-north-nazimabad" });
+  check("a valid zone repairs a missing branch", useStore.getState().branchId, "bb-gulshan-karachi");
+
+  // The "location confirmed" flag is only trusted when a real location survives.
+  apply({ locationConfirmed: true, branchId: "bb-clifton-karachi" });
+  check("confirmed flag restored with a valid location", useStore.getState().locationConfirmed, true);
+
+  apply({ locationConfirmed: true, branchId: "bb-closed-forever" });
+  check("confirmation dropped when the saved branch is gone", useStore.getState().locationConfirmed, false);
+  check("retired branch cleared so the picker reopens", useStore.getState().branchId, null);
+
+  apply({ locationConfirmed: true });
+  check("confirmation with no location is refused", useStore.getState().locationConfirmed, false);
 
   // Hostile / corrupt input must be refused, not applied.
   apply({ orderType: "teleport" });
@@ -144,9 +169,21 @@ console.log("\n=== PART 2: applyRemoteState validates what it is given ===");
   apply(null);
   check("null remote state is a no-op", typeof useStore.getState().orderType, "string");
 
+  // Confirming a location through the modal must persist the flag.
+  useStore.getState().commitLocation({
+    orderType: "delivery",
+    city: "Karachi",
+    branchId: "bb-dha-karachi",
+    zoneId: "z-khi-dha-phase-vi",
+  });
+  check("commitLocation confirms the location", useStore.getState().locationConfirmed, true);
+  check("commitLocation stores the delivery zone", useStore.getState().zoneId, "z-khi-dha-phase-vi");
+
   // Round-trip: serialise then re-apply.
   const snapshot = serializeRemoteState(useStore.getState());
-  check("serialise includes exactly the durable keys", Object.keys(snapshot).length, 9);
+  check("serialise includes exactly the durable keys", Object.keys(snapshot).length, 11);
+  check("serialise carries the selected delivery zone", "zoneId" in snapshot, true);
+  check("serialise carries the confirmation flag", "locationConfirmed" in snapshot, true);
   check("serialise excludes UI-only flags", "cartOpen" in snapshot, false);
   check("serialise excludes cloudMode", "cloudMode" in snapshot, false);
 }

@@ -42,11 +42,13 @@ export function ScrollRail({
 
   useEffect(() => {
     measure();
+    const timer = setTimeout(measure, 150);
     const el = ref.current;
-    if (!el) return;
+    if (!el) return () => clearTimeout(timer);
     el.addEventListener("scroll", measure, { passive: true });
     window.addEventListener("resize", measure);
     return () => {
+      clearTimeout(timer);
       el.removeEventListener("scroll", measure);
       window.removeEventListener("resize", measure);
     };
@@ -80,13 +82,16 @@ export function ScrollRail({
         <button
           type="button"
           onClick={() => scrollBy(-1)}
+          disabled={!canLeft}
           aria-label="Scroll left"
           className={cn(
-            "absolute left-0.5 sm:-left-3 lg:-left-5 z-20 place-items-center rounded-full border border-charcoal/15 bg-white/95 text-charcoal shadow-[0_4px_18px_rgba(0,0,0,0.18)] backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-ember hover:bg-ember hover:text-white active:scale-90",
+            "absolute left-0.5 sm:-left-3 lg:-left-5 z-20 place-items-center rounded-full border border-charcoal/15 bg-white/95 text-charcoal shadow-[0_4px_18px_rgba(0,0,0,0.18)] backdrop-blur-md transition-all duration-200 active:scale-90",
             "h-9 w-9 sm:h-11 sm:w-11",
             arrowPosition,
             visibilityClass,
-            !canLeft && "pointer-events-none opacity-0",
+            canLeft
+              ? "hover:scale-105 hover:border-ember hover:bg-ember hover:text-white cursor-pointer"
+              : "opacity-35 cursor-not-allowed pointer-events-none shadow-none",
           )}
         >
           <ChevronLeft className="h-4.5 w-4.5 sm:h-5 sm:w-5" strokeWidth={2.6} />
@@ -98,13 +103,16 @@ export function ScrollRail({
         <button
           type="button"
           onClick={() => scrollBy(1)}
+          disabled={!canRight}
           aria-label="Scroll right"
           className={cn(
-            "absolute right-0.5 sm:-right-3 lg:-right-5 z-20 place-items-center rounded-full border border-charcoal/15 bg-white/95 text-charcoal shadow-[0_4px_18px_rgba(0,0,0,0.18)] backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-ember hover:bg-ember hover:text-white active:scale-90",
+            "absolute right-0.5 sm:-right-3 lg:-right-5 z-20 place-items-center rounded-full border border-charcoal/15 bg-white/95 text-charcoal shadow-[0_4px_18px_rgba(0,0,0,0.18)] backdrop-blur-md transition-all duration-200 active:scale-90",
             "h-9 w-9 sm:h-11 sm:w-11",
             arrowPosition,
             visibilityClass,
-            !canRight && "pointer-events-none opacity-0",
+            canRight
+              ? "hover:scale-105 hover:border-ember hover:bg-ember hover:text-white cursor-pointer"
+              : "opacity-35 cursor-not-allowed pointer-events-none shadow-none",
           )}
         >
           <ChevronRight className="h-4.5 w-4.5 sm:h-5 sm:w-5" strokeWidth={2.6} />

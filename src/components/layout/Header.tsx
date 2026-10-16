@@ -92,7 +92,7 @@ export function Header() {
           <button
             onClick={() => setNavOpen(true)}
             aria-label="Open menu"
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-charcoal transition-colors hover:bg-charcoal/6 lg:hidden"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-charcoal transition-colors hover:bg-charcoal/6 xl:hidden"
           >
             <Menu className="h-5.5 w-5.5" strokeWidth={2.4} />
           </button>
@@ -102,7 +102,7 @@ export function Header() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="ml-6 hidden items-center gap-0.5 lg:flex">
+          <nav className="ml-4 hidden shrink-0 items-center gap-0.5 xl:ml-6 xl:flex">
             {navLinks.map((l) => {
               const active = pathname === l.href || pathname.startsWith(`${l.href}/`);
               return (
@@ -110,7 +110,7 @@ export function Header() {
                   key={l.href}
                   href={l.href}
                   className={cn(
-                    "relative rounded-full px-3.5 py-2 text-[13px] font-bold transition-colors",
+                    "relative whitespace-nowrap rounded-full px-2.5 py-2 text-[12.5px] font-bold transition-colors 2xl:px-3.5 2xl:text-[13px]",
                     active ? "text-ember" : "text-charcoal/75 hover:text-charcoal",
                   )}
                 >
@@ -128,7 +128,7 @@ export function Header() {
 
           <div className="ml-auto flex items-center gap-2 sm:gap-2.5">
             {/* Order-type segmented control */}
-            <div className="hidden rounded-full bg-charcoal/6 p-1 md:flex">
+            <div className="hidden shrink-0 rounded-full bg-charcoal/6 p-1 md:flex">
               {orderTypes.map((t) => {
                 const Icon = iconFor(t.id);
                 const active = orderType === t.id;
@@ -137,7 +137,7 @@ export function Header() {
                     key={t.id}
                     onClick={() => setOrderType(t.id as OrderType)}
                     className={cn(
-                      "relative flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[11.5px] font-black uppercase tracking-wider transition-colors",
+                      "relative flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[10.5px] font-black uppercase tracking-wider transition-colors 2xl:px-3.5 2xl:text-[11.5px]",
                       active ? "text-cream" : "text-slate-brand hover:text-charcoal",
                     )}
                   >
@@ -158,10 +158,10 @@ export function Header() {
             {/* Location chip */}
             <button
               onClick={() => setLocationOpen(true)}
-              className="hidden max-w-[190px] items-center gap-2 rounded-full border border-charcoal/12 px-3.5 py-2 text-left transition-colors hover:border-ember hover:bg-ember/5 sm:flex"
+              className="hidden h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-charcoal/12 text-left transition-colors hover:border-ember hover:bg-ember/5 sm:flex lg:h-auto lg:min-w-0 lg:w-auto lg:max-w-[150px] lg:px-3.5 lg:py-2 2xl:max-w-[190px]"
             >
               <MapPin className="h-4 w-4 shrink-0 text-ember" strokeWidth={2.6} />
-              <span className="flex min-w-0 flex-col leading-tight">
+              <span className="hidden min-w-0 flex-col leading-tight lg:flex">
                 <span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-brand">
                   {orderType === "delivery" ? "Deliver to" : "Collect from"}
                 </span>
@@ -174,7 +174,7 @@ export function Header() {
             {/* Cart */}
             <button
               onClick={() => setCartOpen(true)}
-              className="relative grid h-11 w-11 place-items-center rounded-full bg-charcoal text-cream transition-all hover:bg-ember active:scale-95"
+              className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-charcoal text-cream transition-all hover:bg-ember active:scale-95"
               aria-label={`Open bucket, ${count} items`}
             >
               <ShoppingBag className="h-5 w-5" strokeWidth={2.3} />
@@ -235,14 +235,14 @@ export function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setNavOpen(false)}
-              className="fixed inset-0 z-[100] bg-charcoal/60 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-[100] bg-charcoal/60 backdrop-blur-sm xl:hidden"
             />
             <motion.aside
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 320, damping: 34 }}
-              className="fixed inset-y-0 left-0 z-[101] w-[86vw] max-w-[360px] bg-charcoal p-6 text-cream lg:hidden"
+              className="fixed inset-y-0 left-0 z-[101] w-[86vw] max-w-[360px] bg-charcoal p-6 text-cream xl:hidden"
             >
               <div className="flex items-center justify-between">
                 <Logo reverse />

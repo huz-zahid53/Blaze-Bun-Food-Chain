@@ -26,6 +26,7 @@ import { createOrder, ApiError } from "@/lib/cloud";
 import { useToast } from "@/components/ui/Toast";
 import { brand, paymentMethods } from "@/config/brand";
 import { branches } from "@/data/branches";
+import { findZone } from "@/data/zones";
 import { cities } from "@/config/brand";
 import { PageHero } from "@/components/ui/PageHero";
 import { MediaFrame } from "@/components/ui/MediaFrame";
@@ -46,6 +47,8 @@ export default function CheckoutPage() {
   const lines = useStore((s) => s.lines);
   const orderType = useStore((s) => s.orderType);
   const branchId = useStore((s) => s.branchId);
+  const zoneId = useStore((s) => s.zoneId);
+  const storeCity = useStore((s) => s.city);
   const coupon = useStore((s) => s.coupon);
   const tip = useStore((s) => s.tip);
   const setTip = useStore((s) => s.setTip);
@@ -64,8 +67,8 @@ export default function CheckoutPage() {
     phone: "",
     email: "",
     address: "",
-    area: "",
-    city: "Karachi",
+    area: findZone(zoneId)?.area ?? "",
+    city: storeCity || "Karachi",
     instructions: "",
     slot: "asap",
     scheduledTime: "",
@@ -83,8 +86,27 @@ export default function CheckoutPage() {
 
   const totals = computeTotals(lines, orderType, coupon, tip);
   const branch = branches.find((b) => b.id === branchId);
+  const zone = findZone(zoneId);
   const visible = hydrated ? lines : [];
   const eta = (branch?.eta ?? 28) + 12;
+
+  // If the location modal is used from here, carry the chosen city and
+  // delivery area into the fulfilment form so the customer doesn't retype it.
+  // Adjusting during render (guarded on the last sync) is React's documented
+  // alternative to a synchronising effect.
+  const zoneArea = zone?.area ?? "";
+  const [syncedLocation, setSyncedLocation] = useState({
+    city: storeCity,
+    area: zoneArea,
+  });
+  if (syncedLocation.city !== storeCity || syncedLocation.area !== zoneArea) {
+    setSyncedLocation({ city: storeCity, area: zoneArea });
+    setForm((f) => ({
+      ...f,
+      city: storeCity || f.city,
+      area: zoneArea || f.area,
+    }));
+  }
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
@@ -179,6 +201,7 @@ export default function CheckoutPage() {
           paymentLabel,
           branchId: branch.id,
           branchName: `${branch.name}, ${branch.city}`,
+          zoneId: orderType === "delivery" ? zoneId : null,
           etaMinutes: eta,
           customer,
         });
@@ -1027,6 +1050,12 @@ export default function CheckoutPage() {
                     <MapPin className="h-3.5 w-3.5 text-ember" />
                     {branch.name}, {branch.city}
                   </p>
+                  {orderType === "delivery" && zone && (
+                    <p className="mt-1.5 flex items-center gap-2 text-[11.5px] font-bold text-cream/60">
+                      <MapPin className="h-3.5 w-3.5 text-ember" />
+                      Delivering to {zone.area}
+                    </p>
+                  )}
                   <p className="mt-1.5 flex items-center gap-2 text-[11.5px] font-bold text-cream/60">
                     <CalendarDays className="h-3.5 w-3.5 text-ember" />
                     {form.slot === "asap" ? `Arriving in ~${eta} min` : `Scheduled: ${form.scheduledTime || "—"}`}

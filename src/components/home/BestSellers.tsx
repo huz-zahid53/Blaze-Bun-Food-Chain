@@ -10,7 +10,7 @@ import { Reveal } from "@/components/ui/Reveal";
 
 export function BestSellers() {
   return (
-    <section className="relative overflow-hidden border-b border-charcoal/8 bg-bone section-y">
+    <section className="relative overflow-hidden border-b border-charcoal/8 bg-bone pt-12 pb-16 sm:pt-14 sm:pb-20 lg:pt-16 lg:pb-24">
       {/* Background grill atmosphere */}
       <Image
         src="/media/hero/bg-grill.jpg"

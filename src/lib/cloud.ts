@@ -106,6 +106,8 @@ export interface CreateOrderInput {
   paymentLabel?: string;
   branchId?: string | null;
   branchName?: string;
+  /** Delivery zone id (delivery orders only). Validated server-side. */
+  zoneId?: string | null;
   etaMinutes?: number;
   customer: {
     name: string;

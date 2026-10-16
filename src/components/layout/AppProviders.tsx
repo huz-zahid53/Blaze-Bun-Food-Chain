@@ -53,7 +53,6 @@ export function AppProviders({ children }: { children: ReactNode }) {
           // No database: run in-memory. The storefront still works, it just
           // won't remember a cart across reloads.
           setCloudMode("local");
-          setHydrated(true);
           return;
         }
 
@@ -69,7 +68,16 @@ export function AppProviders({ children }: { children: ReactNode }) {
           err instanceof ApiError ? err.message : "Could not reach cloud storage.",
         );
       } finally {
-        if (!cancelled.current) setHydrated(true);
+        if (!cancelled.current) {
+          setHydrated(true);
+          // Load is now definitive. If the customer has not confirmed a
+          // location (fresh visit, cleared state, or a saved location that
+          // failed revalidation), open the picker automatically. This runs
+          // exactly once per page load — the effect's deps are stable store
+          // actions — so a reload triggers it but navigation/renders do not.
+          const store = useStore.getState();
+          if (!store.locationConfirmed) store.setLocationOpen(true);
+        }
       }
     })();
 
