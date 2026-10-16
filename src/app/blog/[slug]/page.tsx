@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { ImageWithSkeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, CalendarDays, Clock } from "lucide-react";
@@ -50,17 +50,16 @@ export default async function PostPage({
       <ReadingProgress />
 
       {/* Hero */}
-      <section className="relative isolate overflow-hidden bg-charcoal pt-12 text-cream sm:pt-24">
-        <Image
-          src={post.image ?? "/media/hero/hero-1.jpg"}
-          alt=""
-          aria-hidden
-          fill
-          priority
-          sizes="100vw"
-          style={{ objectPosition: "65% center" }}
-          className="object-cover"
-        />
+<section className="relative isolate overflow-hidden bg-charcoal pt-12 text-cream sm:pt-24">
+         <ImageWithSkeleton
+           src={post.image ?? "/media/hero/hero-1.jpg"}
+           alt=""
+           aria-hidden
+           fill
+           sizes="100vw"
+           style={{ objectPosition: "65% center" }}
+           className="object-cover"
+         />
         <div className="absolute inset-0 bg-gradient-to-r from-charcoal via-charcoal/90 to-charcoal/45" />
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-charcoal/70" />
         <div className="absolute inset-0 bg-gradient-to-tr from-ember/18 via-transparent to-flame/10 mix-blend-overlay" />
@@ -122,18 +121,17 @@ export default async function PostPage({
 
         {/* Cover */}
         <div className="relative mx-auto mt-9 max-w-[1100px] px-4 sm:px-6">
-          <div className="overflow-hidden rounded-t-[30px]">
-            {post.image ? (
-              <Image
-                src={post.image}
-                alt={post.title}
-                width={1400}
-                height={780}
-                priority
-                sizes="100vw"
-                className="h-[300px] w-full object-cover sm:h-[440px] lg:h-[560px]"
-              />
-            ) : (
+<div className="overflow-hidden rounded-t-[30px]">
+             {post.image ? (
+               <ImageWithSkeleton
+                 src={post.image}
+                 alt={post.title}
+                 width={1400}
+                 height={780}
+                 sizes="100vw"
+                 className="h-[300px] w-full object-cover sm:h-[440px] lg:h-[560px]"
+               />
+             ) : (
               <div className="h-[300px] w-full bg-gradient-to-br from-ember to-flame sm:h-[440px]" />
             )}
           </div>

@@ -4,13 +4,30 @@ import { Quote, Star } from "lucide-react";
 import { testimonials } from "@/data/content";
 import { Reveal } from "@/components/ui/Reveal";
 import { Marquee } from "@/components/ui/Marquee";
+import Image from "next/image";
+import { DotGridOverlay } from "@/components/ui/SectionDivider";
 
 export function Testimonials() {
   const rowA = testimonials.slice(0, 3);
   const rowB = testimonials.slice(3);
 
   return (
-    <section className="overflow-hidden bg-white section-y">
+    <section className="relative overflow-hidden border-b border-charcoal/8 bg-white section-y">
+      {/* Relevant Background Photograph (Dining guests ambiance) */}
+      <Image
+        src="/media/hero/bg-dining.jpg"
+        alt=""
+        aria-hidden
+        fill
+        sizes="100vw"
+        className="object-cover opacity-20"
+      />
+      {/* Light legibility wash */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/85 to-white/95" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03] grain" />
+
+      {/* Dot-matrix texture */}
+      <DotGridOverlay tone="light" />
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="flex flex-col items-center text-center">

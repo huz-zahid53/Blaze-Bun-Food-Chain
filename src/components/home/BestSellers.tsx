@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { bestSellers } from "@/data/menu";
 import { ItemCard } from "@/components/menu/ItemCard";
@@ -9,8 +10,20 @@ import { Reveal } from "@/components/ui/Reveal";
 
 export function BestSellers() {
   return (
-    <section className="bg-bone section-y">
-      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+    <section className="relative overflow-hidden border-b border-charcoal/8 bg-bone section-y">
+      {/* Background grill atmosphere */}
+      <Image
+        src="/media/hero/bg-grill.jpg"
+        alt=""
+        aria-hidden
+        fill
+        sizes="100vw"
+        className="object-cover opacity-12"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-bone/95 via-bone/85 to-bone/95" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03] grain" />
+
+      <div className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>

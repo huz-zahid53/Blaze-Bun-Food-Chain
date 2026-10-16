@@ -22,6 +22,7 @@ import {
 import { useStore, type PlacedOrder, type OrderStatus } from "@/store/useStore";
 import { getOrder } from "@/lib/cloud";
 import { PageHero } from "@/components/ui/PageHero";
+import { DotGridOverlay } from "@/components/ui/SectionDivider";
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import { formatPKR, cn, timeAgo } from "@/lib/utils";
 import { menuItems } from "@/data/menu";
@@ -148,6 +149,24 @@ export function TrackBoard() {
     if (found) setSelectedId(found.id);
   }
 
+  function handleSimulateNextStage() {
+    if (!order) return;
+    const currentIdx = activeChain.indexOf(order.status);
+    const nextStatus = activeChain[Math.min(currentIdx + 1, activeChain.length - 1)];
+
+    // 1. Advance in zustand store by id
+    advanceOrder(order.id);
+    if (order.number && order.number !== order.id) {
+      advanceOrder(order.number);
+    }
+
+    // 2. Clear remote status override and set nextStatus so animation triggers immediately
+    setRemoteStatus((prev) => ({
+      ...prev,
+      [order.number]: nextStatus,
+    }));
+  }
+
   return (
     <>
       <PageHero
@@ -260,53 +279,93 @@ export function TrackBoard() {
                   className="overflow-hidden rounded-3xl bg-charcoal text-cream"
                 >
                   <div className="relative overflow-hidden border-b border-cream/10 p-6 sm:p-8">
-                    <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-ember/25 blur-[90px]" />
+                    <DotGridOverlay tone="dark" />
 
                     <div className="relative flex flex-wrap items-start justify-between gap-5">
-                      <div>
-                        <p className="text-[10.5px] font-black uppercase tracking-[0.22em] text-cream/45">
-                          Order {order.number}
-                        </p>
-                        <h2 className="t-section mt-1.5 uppercase tracking-wide">
-                          {stageMeta[order.status].label}
-                        </h2>
-                        <p className="mt-2 text-[13.5px] text-cream/60">
-                          {stageMeta[order.status].blurb}
-                        </p>
-                      </div>
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={order.status}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -12 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <p className="text-[10.5px] font-black uppercase tracking-[0.22em] text-cream/45">
+                              Order {order.number} · Live tracking
+                            </p>
+                          </div>
+                          <h2 className="t-section mt-1.5 uppercase tracking-wide text-white">
+                            {stageMeta[order.status].label}
+                          </h2>
+                          <p className="mt-2 text-[13.5px] text-cream/70">
+                            {stageMeta[order.status].blurb}
+                          </p>
+                        </motion.div>
+                      </AnimatePresence>
 
-                      {order.status !== "delivered" ? (
-                        <div className="text-right">
-                          <p className="text-[10.5px] font-black uppercase tracking-[0.22em] text-cream/45">
-                            Arriving in
-                          </p>
-                          <p className="font-display text-[clamp(2.4rem,7vw,3.6rem)] leading-none text-flame tabular-nums">
-                            {String(Math.floor(etaSeconds / 60)).padStart(2, "0")}:
-                            {String(etaSeconds % 60).padStart(2, "0")}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl bg-fresh/15 px-5 py-4 text-right">
-                          <p className="font-display text-2xl text-green-400">
-                            Complete
-                          </p>
-                          <p className="text-[11.5px] text-cream/55">
-                            +{order.loyaltyEarned} points earned
-                          </p>
-                        </div>
-                      )}
+                      <AnimatePresence mode="wait">
+                        {order.status !== "delivered" ? (
+                          <motion.div
+                            key="timer"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="text-right"
+                          >
+                            <p className="text-[10.5px] font-black uppercase tracking-[0.22em] text-cream/45">
+                              Arriving in
+                            </p>
+                            <p className="font-display text-[clamp(2.4rem,7vw,3.6rem)] leading-none text-flame tabular-nums">
+                              {String(Math.floor(etaSeconds / 60)).padStart(2, "0")}:
+                              {String(etaSeconds % 60).padStart(2, "0")}
+                            </p>
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="complete"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="rounded-2xl bg-fresh/15 px-5 py-4 text-right shadow-[0_0_24px_rgba(34,197,94,0.3)]"
+                          >
+                            <p className="font-display text-2xl text-green-400">
+                              Delivered & Complete
+                            </p>
+                            <p className="text-[11.5px] text-cream/60">
+                              +{order.loyaltyEarned} points earned
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
                     {/* Progress rail */}
                     <div className="relative mt-9">
-                      <div className="absolute left-0 right-0 top-5 h-1 rounded-full bg-cream/12" />
+                      <div className="absolute left-0 right-0 top-5 h-1.5 rounded-full bg-cream/12" />
                       <motion.div
-                        className="absolute left-0 top-5 h-1 rounded-full bg-gradient-to-r from-flame to-ember"
+                        className="absolute left-0 top-5 h-1.5 rounded-full bg-gradient-to-r from-flame via-ember to-gold shadow-[0_0_12px_rgba(255,77,20,0.6)]"
+                        initial={false}
                         animate={{
-                          width: `${(statusIdx / (activeChain.length - 1)) * 100}%`,
+                          width: `${Math.max(2, (statusIdx / (activeChain.length - 1)) * 100)}%`,
                         }}
-                        transition={{ type: "spring", stiffness: 120, damping: 22 }}
+                        transition={{ type: "spring", stiffness: 120, damping: 20 }}
                       />
+
+                      {/* Gliding leading indicator pip along the rail */}
+                      {statusIdx > 0 && statusIdx < activeChain.length && (
+                        <motion.div
+                          className="pointer-events-none absolute top-3.5 -ml-2.5 z-20 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-white shadow-[0_0_14px_rgba(255,77,20,0.9)]"
+                          initial={false}
+                          animate={{
+                            left: `${(statusIdx / (activeChain.length - 1)) * 100}%`,
+                          }}
+                          transition={{ type: "spring", stiffness: 120, damping: 20 }}
+                        >
+                          <span className="h-2.5 w-2.5 rounded-full bg-ember animate-ping" />
+                        </motion.div>
+                      )}
+
                       <ol className="relative flex justify-between">
                         {activeChain.map((s, i) => {
                           const Icon = stageMeta[s].icon;
@@ -317,21 +376,33 @@ export function TrackBoard() {
                               key={s}
                               className="flex w-[62px] flex-col items-center text-center"
                             >
-                              <span
+                              <motion.span
+                                key={`icon-${s}-${done}`}
+                                animate={{
+                                  scale: current ? [1, 1.15, 1] : 1,
+                                }}
+                                transition={{
+                                  scale: {
+                                    duration: 1.4,
+                                    repeat: current ? Infinity : 0,
+                                    repeatDelay: 0.6,
+                                  },
+                                }}
                                 className={cn(
                                   "grid h-11 w-11 place-items-center rounded-full border-2 transition-all duration-500",
                                   done
-                                    ? "border-ember bg-ember text-white"
+                                    ? "border-ember bg-ember text-white shadow-[0_0_16px_rgba(255,77,20,0.5)]"
                                     : "border-cream/20 bg-charcoal text-cream/35",
                                   current && "animate-pulse-ring",
                                 )}
                               >
                                 <Icon className="h-5 w-5" strokeWidth={2.3} />
-                              </span>
+                              </motion.span>
                               <span
                                 className={cn(
                                   "mt-2 text-[9.5px] font-bold uppercase leading-tight tracking-wider transition-colors",
-                                  done ? "text-cream/80" : "text-cream/35",
+                                  done ? "text-cream/90" : "text-cream/35",
+                                  current && "text-gold font-black",
                                 )}
                               >
                                 {stageMeta[s].label}
@@ -346,14 +417,14 @@ export function TrackBoard() {
                     {order.status !== "delivered" && (
                       <div className="relative mt-9 flex flex-wrap items-center gap-3 border-t border-cream/10 pt-5">
                         <button
-                          onClick={() => advanceOrder(order.id)}
-                          className="rounded-full bg-ember px-6 py-3 text-[11.5px] font-black uppercase tracking-wider text-white transition-all hover:bg-ember-dark active:scale-95"
+                          type="button"
+                          onClick={handleSimulateNextStage}
+                          className="rounded-full bg-ember px-6 py-3 text-[11.5px] font-black uppercase tracking-wider text-white shadow-lg shadow-ember/30 transition-all hover:bg-ember-dark hover:scale-105 active:scale-95"
                         >
                           Simulate next stage
                         </button>
                         <p className="text-[11.5px] text-cream/45">
-                          Demo control — in production this updates from the POS
-                          in real time.
+                          Demo control — advances order stages with live real-time progress animations.
                         </p>
                       </div>
                     )}

@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
   Percent,
+  Plus,
   ShoppingBag,
   Sparkles,
   Trash2,
@@ -13,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useStore, computeTotals } from "@/store/useStore";
+import { regularMenuItems } from "@/data/menu";
 import { brand } from "@/config/brand";
 import { formatPKR, cn } from "@/lib/utils";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
@@ -28,6 +30,7 @@ export function CartDrawer() {
   const tip = useStore((s) => s.tip);
   const setQty = useStore((s) => s.setQty);
   const removeLine = useStore((s) => s.removeLine);
+  const addLine = useStore((s) => s.addLine);
   const applyCoupon = useStore((s) => s.applyCoupon);
   const removeCoupon = useStore((s) => s.removeCoupon);
   const hydrated = useStore((s) => s.hydrated);
@@ -222,6 +225,63 @@ export function CartDrawer() {
                     ))}
                   </AnimatePresence>
                 </ul>
+              )}
+
+              {/* Quick Add-ons & Extras Upsell */}
+              {visibleLines.length > 0 && (
+                <div className="mt-5 border-t border-charcoal/8 pt-4">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-charcoal">
+                      Add Extras & Dips
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-brand">
+                      1-Tap Add
+                    </span>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {regularMenuItems
+                      .filter((i) => i.categoryId === "addons" || i.categoryId === "sauces")
+                      .slice(0, 6)
+                      .map((extra) => (
+                        <button
+                          key={extra.slug}
+                          type="button"
+                          onClick={() => {
+                            addLine({
+                              slug: extra.slug,
+                              name: extra.name,
+                              image: extra.image,
+                              hue: extra.hue,
+                              glyph: extra.glyph,
+                              basePrice: extra.price,
+                              unitPrice: extra.price,
+                              qty: 1,
+                              options: [],
+                              addOns: [],
+                              categoryId: extra.categoryId,
+                            });
+                            push({
+                              message: `${extra.name} added to bucket`,
+                              tone: "success",
+                            });
+                          }}
+                          className="shrink-0 flex items-center gap-2 rounded-xl border border-charcoal/10 bg-white px-3 py-2 text-left transition-all hover:border-ember hover:bg-ember/5"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate max-w-[110px] text-[11.5px] font-bold text-charcoal">
+                              {extra.name}
+                            </p>
+                            <p className="text-[10.5px] font-semibold text-ember-dark">
+                              +{formatPKR(extra.price)}
+                            </p>
+                          </div>
+                          <span className="grid h-5 w-5 place-items-center rounded-full bg-charcoal/8 text-charcoal group-hover:bg-ember group-hover:text-white">
+                            <Plus className="h-3 w-3 stroke-[3]" />
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                </div>
               )}
 
               {/* Coupon */}

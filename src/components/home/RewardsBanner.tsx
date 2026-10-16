@@ -7,6 +7,7 @@ import { brand } from "@/config/brand";
 import { useStore } from "@/store/useStore";
 import { useToast } from "@/components/ui/Toast";
 import { formatPKR } from "@/lib/utils";
+import Image from "next/image";
 
 /** KFC-style loyalty / rewards join panel. */
 export function RewardsBanner() {
@@ -38,10 +39,20 @@ export function RewardsBanner() {
   return (
     <section className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <Reveal>
-        <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-ember via-flame to-gold p-8 sm:p-12 lg:p-16">
-          {/* Decorative */}
-          <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/15 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-charcoal/15 blur-3xl" />
+        <div className="relative overflow-hidden rounded-[32px] bg-charcoal p-8 sm:p-12 lg:p-16 text-cream">
+          {/* Relevant Background Photograph */}
+          <Image
+            src="/media/hero/bg-spread.jpg"
+            alt=""
+            aria-hidden
+            fill
+            sizes="100vw"
+            className="object-cover"
+          />
+          {/* Rich ember/flame/gold wash */}
+          <div className="absolute inset-0 bg-gradient-to-br from-ember/85 via-flame/80 to-gold/70" />
+          <div className="pointer-events-none absolute inset-0 opacity-[0.05] grain" />
+
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.14]"
             style={{

@@ -8,6 +8,8 @@ import { cities } from "@/config/brand";
 import { Reveal, Stagger, StaggerItem } from "@/components/ui/Reveal";
 import { useStore } from "@/store/useStore";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { SectionDivider, DotGridOverlay } from "@/components/ui/SectionDivider";
 
 const toneStyles = {
   fresh: "bg-fresh/15 text-green-700",
@@ -27,7 +29,25 @@ export function LocationsPreview() {
   );
 
   return (
-    <section className="bg-charcoal py-12 text-cream sm:py-16">
+    <section className="relative overflow-hidden bg-charcoal py-12 text-cream sm:py-16">
+      {/* Relevant Background Photograph (Dining branches) */}
+      <Image
+        src="/media/hero/bg-dining.jpg"
+        alt=""
+        aria-hidden
+        fill
+        sizes="100vw"
+        className="object-cover"
+      />
+      {/* Deep legibility wash */}
+      <div className="absolute inset-0 bg-gradient-to-r from-charcoal via-charcoal/85 to-charcoal/65" />
+      <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-charcoal/40" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-ember/15 via-transparent to-flame/10 mix-blend-overlay" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.05] grain" />
+
+      {/* Subtle dot-matrix grid overlay */}
+      <DotGridOverlay tone="dark" />
+      <SectionDivider className="absolute inset-x-0 top-0 z-10" tone="dark" />
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="flex flex-wrap items-end justify-between gap-5">

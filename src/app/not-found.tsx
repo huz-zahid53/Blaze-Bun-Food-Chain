@@ -1,11 +1,26 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Flame } from "lucide-react";
+import { SectionDivider, DotGridOverlay } from "@/components/ui/SectionDivider";
 
 export default function NotFound() {
   return (
     <section className="relative flex min-h-[80vh] items-center overflow-hidden bg-charcoal text-cream">
-      <div className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-ember/20 blur-[120px]" />
-      <div className="pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full bg-flame/14 blur-[130px]" />
+      {/* Relevant Background Photograph (The cold grill) */}
+      <Image
+        src="/media/hero/bg-grill.jpg"
+        alt=""
+        aria-hidden
+        fill
+        sizes="100vw"
+        className="object-cover opacity-35"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/80 to-charcoal/70" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.05] grain" />
+
+      {/* Subtle dot-matrix grid overlay */}
+      <DotGridOverlay tone="dark" />
+      <SectionDivider className="absolute inset-x-0 bottom-0 z-10" tone="dark" />
 
       <div className="relative mx-auto max-w-[800px] px-4 py-16 text-center sm:px-6">
         <span className="mx-auto grid h-20 w-20 place-items-center rounded-3xl border border-cream/12 bg-cream/5">

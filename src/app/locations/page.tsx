@@ -59,7 +59,7 @@ export default function LocationsPage() {
   return (
     <>
       <PageHero
-          image="/media/hero/bg-dining.jpg"
+        image="/media/hero/bg-dining.jpg"
         kicker="Locations"
         title={[<span key="a">{branches.length} branches.</span>, <br key="b" />,
           <span key="c" className="bg-gradient-to-r from-flame to-gold bg-clip-text text-transparent">

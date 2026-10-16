@@ -18,7 +18,7 @@ export default function DealsPage() {
   return (
     <>
       <PageHero
-          image="/media/hero/hero-3.jpg"
+        image="/media/hero/hero-3.jpg"
         kicker="Deals & offers"
         title={[<span key="a">Save money,</span>, <br key="b" />,
           <span key="c" className="bg-gradient-to-r from-flame to-gold bg-clip-text text-transparent">
@@ -47,23 +47,15 @@ export default function DealsPage() {
                   <div className="grid lg:grid-cols-[1.05fr_1fr]">
                     {/* Media */}
                     <div className="relative aspect-[16/11] overflow-hidden lg:aspect-auto lg:min-h-[380px]">
-                      {deal.image ? (
-                        <Image
-                          src={deal.image}
-                          alt={deal.title}
-                          fill
-                          sizes="(max-width: 1024px) 100vw, 52vw"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <MediaFrame
-                          hue={deal.hue}
-                          glyph={deal.glyph}
-                          alt={deal.title}
-                          ratio="aspect-[16/11] lg:h-full"
-                          sizes="(max-width: 1024px) 100vw, 52vw"
-                        />
-                      )}
+                      <MediaFrame
+                        src={deal.image}
+                        hue={deal.hue}
+                        glyph={deal.glyph}
+                        alt={deal.title}
+                        ratio="aspect-[16/11] lg:h-full lg:aspect-auto"
+                        sizes="(max-width: 1024px) 100vw, 52vw"
+                        priority={i === 0}
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-charcoal/70 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-charcoal" />
 
                       <div className="absolute left-5 top-5 flex flex-wrap gap-2">
@@ -122,10 +114,30 @@ export default function DealsPage() {
                         )}
                       </div>
 
+                      {/* Contents */}
+                      {deal.contents && deal.contents.length > 0 && (
+                        <div className="mt-5">
+                          <p className="text-[10.5px] font-black uppercase tracking-wider text-gold">
+                            Bundle contents:
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {deal.contents.map((item, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-cream/10 px-3 py-1 text-[11px] font-medium text-cream"
+                              >
+                                <Check className="h-3 w-3 text-emerald-400" />
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Terms */}
-                      <ul className="mt-6 space-y-2">
+                      <ul className="mt-5 space-y-1.5">
                         {deal.terms.map((t) => (
-                          <li key={t} className="flex items-start gap-2.5 text-[12.5px] text-cream/55">
+                          <li key={t} className="flex items-start gap-2.5 text-[12px] text-cream/55">
                             <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-fresh" strokeWidth={3} />
                             {t}
                           </li>
@@ -154,11 +166,7 @@ export default function DealsPage() {
                         </div>
 
                         <Link
-                          href={
-                            deal.itemSlugs.length
-                              ? `/menu?item=${deal.itemSlugs[0]}`
-                              : "/menu"
-                          }
+                          href={`/menu?item=${deal.slug}`}
                           className={cn(
                             "group inline-flex items-center gap-2 rounded-full px-7 py-4 text-[12px] font-black uppercase tracking-wider transition-all",
                             midnight

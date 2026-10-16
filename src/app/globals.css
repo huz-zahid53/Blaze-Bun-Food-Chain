@@ -231,6 +231,9 @@ body {
 .animate-slide-up {
   animation: slide-up-fade 0.6s var(--ease-blaze) both;
 }
+.animate-shimmer {
+  animation: shimmer 1.8s infinite;
+}
 
 /* Reveal-on-scroll (CSS fallback if JS motion disabled) */
 .reveal {

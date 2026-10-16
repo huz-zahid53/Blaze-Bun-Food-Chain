@@ -360,7 +360,7 @@ export const useStore = create<StoreState>()(
       advanceOrder: (id) => {
         set({
           orders: get().orders.map((o) => {
-            if (o.id !== id) return o;
+            if (o.id !== id && o.number !== id) return o;
             // Pick-up orders terminate at "ready-for-pickup", not delivery
             const chain: OrderStatus[] =
               o.type === "pickup"

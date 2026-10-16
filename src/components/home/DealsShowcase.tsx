@@ -12,8 +12,21 @@ export function DealsShowcase({ compact = false }: { compact?: boolean }) {
   const shown = compact ? deals.slice(0, 3) : deals;
 
   return (
-    <section className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-      <Reveal>
+    <section className="relative overflow-hidden border-b border-charcoal/8 bg-white py-12 sm:py-16">
+      {/* Background feast spread atmosphere */}
+      <Image
+        src="/media/hero/bg-spread.jpg"
+        alt=""
+        aria-hidden
+        fill
+        sizes="100vw"
+        className="object-cover opacity-12"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-cream/85 to-white/95" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03] grain" />
+
+      <div className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        <Reveal>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.28em] text-ember">
@@ -53,23 +66,15 @@ export function DealsShowcase({ compact = false }: { compact?: boolean }) {
               >
                 {/* Media */}
                 <div className="relative aspect-[16/10] overflow-hidden">
-                  {deal.image ? (
-                    <Image
-                      src={deal.image}
-                      alt={deal.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover transition-transform duration-[1000ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110"
-                    />
-                  ) : (
-                    <MediaFrame
-                      hue={deal.hue}
-                      glyph={deal.glyph}
-                      alt={deal.title}
-                      ratio="aspect-[16/10]"
-                      zoom
-                    />
-                  )}
+                  <MediaFrame
+                    src={deal.image}
+                    hue={deal.hue}
+                    glyph={deal.glyph}
+                    alt={deal.title}
+                    ratio="aspect-[16/10]"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    zoom
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/25 to-transparent" />
 
                   <span className="absolute left-4 top-4 rounded-full bg-ember px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white">
@@ -88,9 +93,22 @@ export function DealsShowcase({ compact = false }: { compact?: boolean }) {
                   <h3 className="t-section-sm uppercase tracking-wide">
                     {deal.title}
                   </h3>
-                  <p className="mt-2 flex-1 text-[13.5px] leading-[1.6] text-cream/60">
+                  <p className="mt-2 flex-1 text-[13px] leading-[1.6] text-cream/65 line-clamp-2">
                     {deal.description}
                   </p>
+
+                  {deal.contents && (
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {deal.contents.slice(0, 3).map((item, idx) => (
+                        <span
+                          key={idx}
+                          className="rounded bg-white/10 px-2 py-0.5 text-[10.5px] font-medium text-cream/80"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] font-bold">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-cream/10 px-3 py-1.5 uppercase tracking-wider text-cream/80">
@@ -132,6 +150,7 @@ export function DealsShowcase({ compact = false }: { compact?: boolean }) {
           );
         })}
       </Stagger>
+      </div>
     </section>
   );
 }

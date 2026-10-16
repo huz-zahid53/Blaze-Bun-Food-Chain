@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { ImageWithSkeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
 import {
   Banknote,
@@ -125,7 +125,7 @@ export default function FranchisePage() {
   return (
     <>
       <PageHero
-          image="/media/story/franchise.jpg"
+        image="/media/story/franchise.jpg"
         kicker="Franchise"
         title={[<span key="a">Own the</span>, <br key="b" />,
           <span key="c" className="bg-gradient-to-r from-flame to-gold bg-clip-text text-transparent">
@@ -286,15 +286,15 @@ export default function FranchisePage() {
       {/* Image band */}
       <Reveal>
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-[32px]">
-            <Image
-              src="/media/story/franchise.jpg"
-              alt="Inside a Blaze & Bun restaurant"
-              width={1600}
-              height={700}
-              sizes="100vw"
-              className="h-[320px] w-full object-cover sm:h-[440px]"
-            />
+<div className="relative overflow-hidden rounded-[32px]">
+             <ImageWithSkeleton
+               src="/media/story/franchise.jpg"
+               alt="Inside a Blaze & Bun restaurant"
+               width={1600}
+               height={700}
+               sizes="100vw"
+               className="h-[320px] w-full object-cover sm:h-[440px]"
+             />
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal/85 via-charcoal/25 to-transparent" />
             <div className="absolute bottom-0 left-0 p-7 sm:p-11">
               <p className="inline-flex items-center gap-2 rounded-full bg-ember px-4 py-1.5 text-[10.5px] font-black uppercase tracking-wider text-white">

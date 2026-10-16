@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { ImageWithSkeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
 import {
   CalendarCheck,
@@ -106,8 +106,8 @@ export default function CateringPage() {
   return (
     <>
       <PageHero
-          image="/media/hero/bg-spread.jpg"
-          focus="center"
+        image="/media/hero/bg-spread.jpg"
+        focus="center"
         kicker="Catering"
         title={[<span key="a">Feed the</span>, <br key="b" />,
           <span key="c" className="bg-gradient-to-r from-flame to-gold bg-clip-text text-transparent">
@@ -315,15 +315,15 @@ export default function CateringPage() {
                 </div>
               </div>
 
-              <div className="mt-6 overflow-hidden rounded-3xl">
-                <Image
-                  src="/media/story/franchise.jpg"
-                  alt="A Blaze & Bun dining room"
-                  width={800}
-                  height={520}
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="h-full w-full object-cover"
-                />
+<div className="mt-6 overflow-hidden rounded-3xl">
+                 <ImageWithSkeleton
+                   src="/media/story/franchise.jpg"
+                   alt="A Blaze & Bun dining room"
+                   width={800}
+                   height={520}
+                   sizes="(max-width: 1024px) 100vw, 50vw"
+                   className="h-full w-full object-cover"
+                 />
               </div>
             </Reveal>
           </div>

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { ImageWithSkeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
 import { ArrowRight, Award, Flame, Handshake, Leaf } from "lucide-react";
 import { PageHero } from "@/components/ui/PageHero";
+import { SectionDivider, DotGridOverlay } from "@/components/ui/SectionDivider";
 import { Reveal, Stagger, StaggerItem } from "@/components/ui/Reveal";
 import { values, timeline, heroStats } from "@/data/content";
 import { brand } from "@/config/brand";
@@ -71,15 +73,15 @@ export default function AboutPage() {
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-14">
           <Reveal direction="left">
             <div className="relative">
-              <div className="overflow-hidden rounded-[30px]">
-                <Image
-                  src="/media/story/about.jpg"
-                  alt="Our chef working the flame grill"
-                  width={900}
-                  height={700}
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="h-full w-full object-cover"
-                />
+<div className="overflow-hidden rounded-[30px]">
+                 <ImageWithSkeleton
+                   src="/media/story/about.jpg"
+                   alt="Our chef working the flame grill"
+                   width={900}
+                   height={700}
+                   sizes="(max-width: 1024px) 100vw, 50vw"
+                   className="h-full w-full object-cover"
+                 />
               </div>
               <div className="absolute -bottom-7 -left-5 hidden rounded-2xl border border-charcoal/8 bg-white p-5 shadow-xl sm:block">
                 <p className="font-display text-4xl leading-none text-ember">41</p>
@@ -217,8 +219,24 @@ export default function AboutPage() {
       </section>
 
       {/* Timeline */}
-      <section className="bg-charcoal py-12 text-cream sm:py-16">
-        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden bg-charcoal py-14 text-cream sm:py-20">
+        {/* Relevant Background Photograph (The 2019 grill origin) */}
+        <Image
+          src="/media/hero/bg-grill.jpg"
+          alt=""
+          aria-hidden
+          fill
+          sizes="100vw"
+          className="object-cover opacity-35"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/90 via-charcoal/80 to-charcoal/90" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.05] grain" />
+
+        <DotGridOverlay tone="dark" />
+        <SectionDivider className="absolute inset-x-0 top-0 z-10" tone="dark" />
+        <SectionDivider className="absolute inset-x-0 bottom-0 z-10" tone="dark" />
+
+        <div className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <Reveal>
             <div className="max-w-2xl">
               <span className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.28em] text-ember">

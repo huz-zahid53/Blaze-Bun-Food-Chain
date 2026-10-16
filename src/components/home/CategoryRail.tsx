@@ -9,13 +9,17 @@ import {
   CupSoda,
   Drumstick,
   Flame,
+  PlusCircle,
   Sandwich,
   Soup,
+  Sparkles,
+  Utensils,
 } from "lucide-react";
 import { categories, type CategoryIcon } from "@/data/menu";
 import { ScrollRail } from "@/components/ui/ScrollRail";
 import { Reveal } from "@/components/ui/Reveal";
 import { itemsByCategory } from "@/data/menu";
+import { ImageWithSkeleton } from "@/components/ui/Skeleton";
 
 const iconMap: Record<CategoryIcon, typeof Beef> = {
   burger: Sandwich,
@@ -25,13 +29,29 @@ const iconMap: Record<CategoryIcon, typeof Beef> = {
   fries: Soup,
   cup: CupSoda,
   dessert: CakeSlice,
+  wrap: Utensils,
+  sauce: Sparkles,
+  addon: PlusCircle,
 };
 
 /** KFC-style "Explore menu" circular category rail. */
 export function CategoryRail() {
   return (
-    <section className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-      <Reveal>
+    <section className="relative overflow-hidden border-b border-charcoal/8 bg-bone/40 py-12 sm:py-16">
+      {/* Background food ambiance */}
+      <Image
+        src="/media/hero/bg-spread.jpg"
+        alt=""
+        aria-hidden
+        fill
+        sizes="100vw"
+        className="object-cover opacity-12"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-bone/95 via-cream/85 to-bone/95" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03] grain" />
+
+      <div className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        <Reveal>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.28em] text-ember">
@@ -80,13 +100,14 @@ export function CategoryRail() {
 
                     {/* Photorealistic image (if provided) — falls back to icon */}
                     {c.image ? (
-                      <Image
+                      <ImageWithSkeleton
                         src={c.image}
                         alt={c.name}
                         fill
                         sizes="128px"
                         unoptimized
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        wrapperClassName="h-full w-full rounded-full"
                       />
                     ) : (
                       <Icon
@@ -108,6 +129,7 @@ export function CategoryRail() {
           })}
         </ScrollRail>
       </Reveal>
+      </div>
     </section>
   );
 }

@@ -20,7 +20,7 @@ interface Props {
 }
 
 /**
- * Renders the real photograph when one exists for an item,
+ * Renders the real photograph with lazy loading and animated skeleton shimmer,
  * otherwise falls back to the generative glyph on a brand-tinted
  * duotone backdrop. Always visually complete — never a broken image.
  */
@@ -35,6 +35,7 @@ export function MediaFrame({
   priority,
   zoom = true,
 }: Props) {
+  const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const showPhoto = Boolean(src) && !failed;
   const r = seededRandom(alt);
@@ -54,18 +55,33 @@ export function MediaFrame({
       style={!showPhoto ? backdrop : undefined}
     >
       {showPhoto ? (
-        <Image
-          src={src as string}
-          alt={alt}
-          fill
-          sizes={sizes}
-          priority={priority}
-          onError={() => setFailed(true)}
-          className={cn(
-            "object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-            zoom && "group-hover:scale-[1.09]",
+        <>
+          {/* Shimmer skeleton loader until image has fully loaded */}
+          {!loaded && (
+            <div className="absolute inset-0 z-10 bg-charcoal/10 overflow-hidden">
+              <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+            </div>
           )}
-        />
+
+          <Image
+            src={src as string}
+            alt={alt}
+            fill
+            sizes={sizes}
+            priority={priority}
+            loading={priority ? "eager" : "lazy"}
+            onLoad={() => setLoaded(true)}
+            onError={() => {
+              setFailed(true);
+              setLoaded(true);
+            }}
+            className={cn(
+              "object-cover transition-all duration-[750ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+              !loaded ? "opacity-0 scale-[0.98] blur-[2px]" : "opacity-100 scale-100 blur-0",
+              zoom && "group-hover:scale-[1.09]",
+            )}
+          />
+        </>
       ) : (
         <>
           {/* Soft glow behind the glyph */}

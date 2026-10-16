@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { SectionDivider, DotGridOverlay } from "@/components/ui/SectionDivider";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -9,10 +10,7 @@ interface Props {
   children?: ReactNode;
   className?: string;
   align?: "left" | "center";
-  /**
-   * Fast-food background photograph. When omitted the hero falls back to
-   * the ember-gradient treatment used on the franchise page.
-   */
+  /** Fast-food background photograph. Defaults to relevant flame background. */
   image?: string;
   /** Which side of the photograph the subject sits on. */
   focus?: "right" | "left" | "center";
@@ -23,9 +21,8 @@ interface Props {
 /**
  * Shared hero band for interior pages.
  *
- * Every page hero now carries a full-bleed fast-food photograph graded
- * with a charcoal wash so the left-hand column stays legible, and fades
- * into the page background at the bottom for a seamless transition.
+ * Every page hero carries a full-bleed fast-food photograph graded
+ * with a charcoal wash so the left-hand column stays legible.
  */
 export function PageHero({
   kicker,
@@ -34,7 +31,7 @@ export function PageHero({
   children,
   className,
   align = "left",
-  image,
+  image = "/media/hero/bg-dining.jpg",
   focus = "right",
   tone = "deep",
 }: Props) {
@@ -49,49 +46,42 @@ export function PageHero({
       )}
     >
       {/* ---------- Background photograph ---------- */}
-      {image ? (
-        <>
-          <Image
-            src={image}
-            alt=""
-            aria-hidden
-            fill
-            priority
-            sizes="100vw"
-            style={{ objectPosition }}
-            className="object-cover"
-          />
-          {/* Legibility wash — left column stays readable */}
-          <div
-            className={cn(
-              "absolute inset-0",
-              tone === "deep"
-                ? "bg-gradient-to-r from-charcoal via-charcoal/88 to-charcoal/35"
-                : "bg-gradient-to-r from-charcoal/85 via-charcoal/70 to-charcoal/40",
-            )}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/25 to-charcoal/55" />
-          {/* Brand duotone */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-ember/20 via-transparent to-flame/10 mix-blend-overlay" />
-        </>
-      ) : (
-        <>
-          {/* Fallback: ember glow treatment */}
-          <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-ember/25 blur-[120px]" />
-          <div className="pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full bg-flame/18 blur-[130px]" />
-        </>
-      )}
+      <Image
+        src={image}
+        alt=""
+        aria-hidden
+        fill
+        priority
+        sizes="100vw"
+        style={{ objectPosition }}
+        className="object-cover"
+      />
+      {/* Legibility wash — left column stays readable while right food image shines through */}
+      <div
+        className={cn(
+          "absolute inset-0",
+          tone === "deep"
+            ? "bg-gradient-to-r from-charcoal via-charcoal/80 to-charcoal/20"
+            : "bg-gradient-to-r from-charcoal/80 via-charcoal/60 to-charcoal/15",
+        )}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-charcoal/30" />
+      {/* Brand duotone warmth */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-ember/15 via-transparent to-flame/10 mix-blend-overlay" />
 
       {/* Film grain */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.05] grain" />
 
-      {/* Bottom fade into the page so the hero doesn't end on a hard line */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-cream" />
+      {/* Subtle dot-matrix grid overlay */}
+      <DotGridOverlay tone="dark" />
+
+      {/* Luminous hairline divider */}
+      <SectionDivider className="absolute inset-x-0 bottom-0 z-10" tone="dark" />
 
       {/* ---------- Content ---------- */}
       <div
         className={cn(
-          "relative mx-auto max-w-[1400px] px-4 pb-20 pt-14 sm:px-6 sm:pb-24 sm:pt-16 lg:px-8 lg:pb-28 lg:pt-20",
+          "relative mx-auto max-w-[1400px] px-4 pb-14 pt-14 sm:px-6 sm:pb-16 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-20",
           align === "center" && "text-center",
         )}
       >

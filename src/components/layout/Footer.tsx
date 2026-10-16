@@ -3,7 +3,9 @@ import { Mail, MapPin, Phone } from "lucide-react";
 import { brand, navLinks } from "@/config/brand";
 import { Logo } from "@/components/brand/Logo";
 import { StripeBar } from "@/components/ui/Marquee";
+import { SectionDivider, DotGridOverlay } from "@/components/ui/SectionDivider";
 import { NewsletterForm } from "@/components/ui/NewsletterForm";
+import Image from "next/image";
 import {
   FacebookIcon,
   InstagramIcon,
@@ -48,7 +50,23 @@ export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-24 bg-charcoal text-cream">
+    <footer className="relative isolate mt-24 overflow-hidden bg-charcoal text-cream">
+      {/* Relevant Background Photograph (Flame Grill Ambiance) */}
+      <Image
+        src="/media/hero/bg-grill.jpg"
+        alt=""
+        aria-hidden
+        fill
+        sizes="100vw"
+        className="object-cover opacity-30"
+      />
+      {/* Deep legibility wash */}
+      <div className="absolute inset-0 bg-charcoal/88" />
+      <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/80 to-charcoal/70" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.05] grain" />
+      <DotGridOverlay tone="dark" />
+
+      <SectionDivider tone="dark" />
       <StripeBar />
 
       {/* Newsletter */}

@@ -1,18 +1,38 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { ImageWithSkeleton } from "@/components/ui/Skeleton";
+import { SectionDivider, DotGridOverlay } from "@/components/ui/SectionDivider";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Leaf, Search, SlidersHorizontal, X } from "lucide-react";
-import { categories, menuItems, type MenuItem } from "@/data/menu";
+import {
+  Flame,
+  Leaf,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Tag,
+  X,
+} from "lucide-react";
+import {
+  categories,
+  menuItems,
+  regularMenuItems,
+  bestSellers,
+  type MenuItem,
+} from "@/data/menu";
+import { deals, type Deal } from "@/data/deals";
 import { ItemCard } from "@/components/menu/ItemCard";
 import { ItemModal } from "@/components/menu/ItemModal";
+import { DealCard } from "@/components/menu/DealCard";
+import { DealModal } from "@/components/menu/DealModal";
 import { Reveal, Stagger, StaggerItem } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/useStore";
 
 type SortKey = "popular" | "price-asc" | "price-desc" | "rating";
+type BurgerSubFilter = "all" | "beef" | "chicken" | "veg";
 
 const sorts: { key: SortKey; label: string }[] = [
   { key: "popular", label: "Most popular" },
@@ -26,10 +46,12 @@ export function MenuBrowser() {
   const deepLink = params.get("item");
 
   const [active, setActive] = useState<string>("all");
+  const [burgerFilter, setBurgerFilter] = useState<BurgerSubFilter>("all");
   const [query, setQuery] = useState("");
   const [vegOnly, setVegOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("popular");
   const [openItem, setOpenItem] = useState<MenuItem | null>(null);
+  const [openDeal, setOpenDeal] = useState<Deal | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const orderType = useStore((s) => s.orderType);
@@ -37,6 +59,12 @@ export function MenuBrowser() {
   // Deep-link: /menu?item=slug opens the configurator straight away
   useEffect(() => {
     if (!deepLink) return;
+    const foundDeal = deals.find((d) => d.slug === deepLink);
+    if (foundDeal) {
+      setOpenDeal(foundDeal);
+      setActive("deals");
+      return;
+    }
     const found = menuItems.find((i) => i.slug === deepLink);
     if (found) {
       setOpenItem(found);
@@ -54,8 +82,19 @@ export function MenuBrowser() {
     }
   }, []);
 
-  const results = useMemo(() => {
-    let list = menuItems.filter((i) => active === "all" || i.categoryId === active);
+  // Filtered regular items
+  const filteredRegularItems = useMemo(() => {
+    let list = [...regularMenuItems];
+
+    if (active === "best-sellers") {
+      list = list.filter((i) => i.tags.includes("bestseller"));
+    } else if (active !== "all" && active !== "deals") {
+      list = list.filter((i) => i.categoryId === active);
+    }
+
+    if (active === "burgers" && burgerFilter !== "all") {
+      list = list.filter((i) => i.subCategory === burgerFilter);
+    }
 
     const q = query.trim().toLowerCase();
     if (q) {
@@ -80,15 +119,47 @@ export function MenuBrowser() {
           b.reviews - a.reviews,
       );
     return sorted;
-  }, [active, query, vegOnly, sort]);
+  }, [active, burgerFilter, query, vegOnly, sort]);
 
-  // Group by category when browsing "all"
-  const grouped = useMemo(() => {
-    if (active !== "all") return null;
-    return categories
-      .map((c) => ({ category: c, items: results.filter((i) => i.categoryId === c.id) }))
-      .filter((g) => g.items.length > 0);
-  }, [active, results]);
+  // Filtered deals
+  const filteredDeals = useMemo(() => {
+    if (vegOnly) return [];
+    let list = [...deals];
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (d) =>
+          d.title.toLowerCase().includes(q) ||
+          d.description.toLowerCase().includes(q) ||
+          d.contents.join(" ").toLowerCase().includes(q),
+      );
+    }
+    if (sort === "price-asc") list.sort((a, b) => a.price - b.price);
+    if (sort === "price-desc") list.sort((a, b) => b.price - a.price);
+    return list;
+  }, [query, vegOnly, sort]);
+
+  // Count items per category pill
+  const categoryCounts = useMemo(() => {
+    const map: Record<string, number> = {
+      all: deals.length + regularMenuItems.length,
+      deals: deals.length,
+      "best-sellers": bestSellers.length,
+    };
+    for (const c of categories) {
+      if (c.id !== "deals" && c.id !== "best-sellers") {
+        map[c.id] = regularMenuItems.filter((i) => i.categoryId === c.id).length;
+      }
+    }
+    return map;
+  }, []);
+
+  const totalResultsCount =
+    active === "deals"
+      ? filteredDeals.length
+      : active === "all"
+        ? filteredDeals.length + filteredRegularItems.length
+        : filteredRegularItems.length;
 
   return (
     <>
@@ -104,13 +175,18 @@ export function MenuBrowser() {
           style={{ objectPosition: "72% center" }}
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-charcoal via-charcoal/88 to-charcoal/35" />
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/25 to-charcoal/55" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-ember/20 via-transparent to-flame/10 mix-blend-overlay" />
+        <div className="absolute inset-0 bg-gradient-to-r from-charcoal via-charcoal/80 to-charcoal/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-charcoal/30" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-ember/15 via-transparent to-flame/10 mix-blend-overlay" />
         <div className="pointer-events-none absolute inset-0 opacity-[0.05] grain" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-cream" />
 
-        <div className="relative mx-auto max-w-[1400px] px-4 pb-20 pt-14 sm:px-6 sm:pb-24 sm:pt-16 lg:px-8 lg:pb-28 lg:pt-20">
+        {/* 21st.dev style subtle dot-matrix grid overlay */}
+        <DotGridOverlay tone="dark" />
+
+        {/* 21st.dev inspired luminous hairline divider */}
+        <SectionDivider className="absolute inset-x-0 bottom-0 z-10" tone="dark" />
+
+        <div className="relative mx-auto max-w-[1400px] px-4 pb-12 pt-14 sm:px-6 sm:pb-14 sm:pt-16 lg:px-8 lg:pb-16 lg:pt-20">
           <span className="t-eyebrow inline-flex items-center gap-2 text-ember">
             <span className="h-[3px] w-6 rounded-full bg-ember" />
             The full menu
@@ -123,8 +199,8 @@ export function MenuBrowser() {
             </span>
           </h1>
           <p className="t-lead mt-4 max-w-xl text-cream/70">
-            {menuItems.length} items, ground and grilled fresh daily. Tap any
-            card to build it exactly how you want it.
+            {deals.length} combo deals & {regularMenuItems.length} freshly ground
+            specialities. Ordered by popularity and grilled fresh daily.
           </p>
 
           {/* Search */}
@@ -134,7 +210,7 @@ export function MenuBrowser() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search the menu…"
+                placeholder="Search deals, burgers, wings, loaded fries…"
                 aria-label="Search the menu"
                 className="w-full rounded-full border border-cream/15 bg-cream/5 py-4 pl-13 pr-12 text-[14.5px] text-cream outline-none transition-colors placeholder:text-cream/40 focus:border-ember"
                 style={{ paddingLeft: "3.25rem" }}
@@ -153,7 +229,7 @@ export function MenuBrowser() {
         </div>
       </section>
 
-      {/* ---------- Filter bar ---------- */}
+      {/* ---------- Sticky Filter bar (Exact 10 Categories Order) ---------- */}
       <div className="sticky top-[112px] z-[60] border-b border-charcoal/8 bg-cream/92 backdrop-blur-xl md:top-[76px]">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 py-3">
@@ -161,9 +237,12 @@ export function MenuBrowser() {
             <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto no-scrollbar">
               <Pill
                 active={active === "all"}
-                onClick={() => setActive("all")}
+                onClick={() => {
+                  setActive("all");
+                  setBurgerFilter("all");
+                }}
                 label="All"
-                count={menuItems.length}
+                count={categoryCounts["all"]}
               />
               {categories.map((c) => (
                 <Pill
@@ -171,13 +250,15 @@ export function MenuBrowser() {
                   active={active === c.id}
                   onClick={() => {
                     setActive(c.id);
+                    if (c.id !== "burgers") setBurgerFilter("all");
                     if (active === "all") {
                       const el = document.getElementById("grid-top");
                       el?.scrollIntoView({ behavior: "smooth", block: "start" });
                     }
                   }}
                   label={c.name}
-                  count={menuItems.filter((i) => i.categoryId === c.id).length}
+                  badge={c.badge}
+                  count={categoryCounts[c.id] ?? 0}
                 />
               ))}
             </div>
@@ -213,8 +294,8 @@ export function MenuBrowser() {
         <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
           <p className="text-[13.5px] text-slate-brand">
             Showing{" "}
-            <strong className="font-black text-charcoal">{results.length}</strong>{" "}
-            {results.length === 1 ? "item" : "items"}
+            <strong className="font-black text-charcoal">{totalResultsCount}</strong>{" "}
+            {totalResultsCount === 1 ? "item" : "items"}
             {query && (
               <>
                 {" "}
@@ -237,7 +318,7 @@ export function MenuBrowser() {
           </button>
         </div>
 
-        {results.length === 0 ? (
+        {totalResultsCount === 0 ? (
           <div className="rounded-3xl border border-dashed border-charcoal/15 py-16 text-center">
             <p className="font-display text-3xl uppercase tracking-wide text-charcoal">
               Nothing matched that
@@ -250,68 +331,238 @@ export function MenuBrowser() {
                 setQuery("");
                 setVegOnly(false);
                 setActive("all");
+                setBurgerFilter("all");
               }}
               className="mt-6 rounded-full bg-charcoal px-7 py-3.5 text-[12px] font-black uppercase tracking-wider text-cream hover:bg-ember"
             >
               Reset filters
             </button>
           </div>
-        ) : grouped ? (
-          /* Grouped by category */
-          <div className="space-y-10">
-            {grouped.map((g, gi) => (
-              <section key={g.category.id} id={g.category.id} className="scroll-mt-40">
+        ) : active === "all" ? (
+          /* ============================================================
+             "ALL" VIEW — ORDERED BY CATEGORY (1 to 10 in sequence)
+             ============================================================ */
+          <div className="space-y-14">
+            {/* 1. Deals / Offers (Always First — Main Revenue Driver) */}
+            {filteredDeals.length > 0 && (
+              <section id="deals" className="scroll-mt-40">
                 <Reveal>
                   <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-charcoal/10 pb-4">
                     <div>
-                      <h2 className="t-section-sm uppercase tracking-wide text-charcoal">
-                        {g.category.name}
-                      </h2>
-                      <p className="mt-2 text-[13px] text-slate-brand">
-                        {g.category.blurb}
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-ember px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
+                          #1 Deals
+                        </span>
+                        <h2 className="t-section-sm uppercase tracking-wide text-charcoal">
+                          Deals / Offers
+                        </h2>
+                      </div>
+                      <p className="mt-1.5 text-[13px] text-slate-brand">
+                        Slot bundles, midnight munch boxes & party feasts with customizable sides & drinks
                       </p>
                     </div>
                     <span className="rounded-full bg-ember/10 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-ember-dark">
-                      {g.items.length} items
+                      {filteredDeals.length} bundles
                     </span>
                   </div>
                 </Reveal>
 
+                {/* Grid: 4 columns on desktop, 2 on tablet, 1 on mobile (horizontal card) */}
                 <Stagger
-                  className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                  className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
                   stagger={0.05}
                 >
-                  {g.items.map((item, i) => (
-                    <StaggerItem key={item.slug} className="h-full">
-                      <ItemCard
-                        item={item}
-                        priority={gi === 0 && i < 4}
+                  {filteredDeals.map((deal, i) => (
+                    <StaggerItem key={deal.id} className="h-full">
+                      <DealCard
+                        deal={deal}
+                        onSelect={(d) => setOpenDeal(d)}
+                        priority={i < 4}
                         className="h-full"
                       />
                     </StaggerItem>
                   ))}
                 </Stagger>
               </section>
-            ))}
+            )}
+
+            {/* 2. Best Sellers / Trending (Optional / Pulls from other categories) */}
+            {bestSellers.length > 0 && !query && (
+              <section id="best-sellers" className="scroll-mt-40">
+                <Reveal>
+                  <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-charcoal/10 pb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-gradient-to-r from-flame to-gold px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-charcoal">
+                          Trending
+                        </span>
+                        <h2 className="t-section-sm uppercase tracking-wide text-charcoal">
+                          Best Sellers / Trending
+                        </h2>
+                      </div>
+                      <p className="mt-1.5 text-[13px] text-slate-brand">
+                        The city's most requested smash burgers, crispy chicken & sides
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-gold/20 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-amber-900">
+                      {bestSellers.length} top items
+                    </span>
+                  </div>
+                </Reveal>
+
+                <Stagger
+                  className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                  stagger={0.05}
+                >
+                  {bestSellers.map((item, i) => (
+                    <StaggerItem key={`bestseller-${item.slug}`} className="h-full">
+                      <ItemCard item={item} priority={i < 4} className="h-full" />
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              </section>
+            )}
+
+            {/* Categories 3 to 10 in exact requested order */}
+            {categories
+              .filter((c) => c.id !== "deals" && c.id !== "best-sellers")
+              .map((category) => {
+                const items = filteredRegularItems.filter(
+                  (i) => i.categoryId === category.id,
+                );
+                if (items.length === 0) return null;
+
+                return (
+                  <section
+                    key={category.id}
+                    id={category.id}
+                    className="scroll-mt-40"
+                  >
+                    <Reveal>
+                      <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-charcoal/10 pb-4">
+                        <div>
+                          <h2 className="t-section-sm uppercase tracking-wide text-charcoal">
+                            {category.name}
+                          </h2>
+                          <p className="mt-1.5 text-[13px] text-slate-brand">
+                            {category.blurb}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-charcoal/6 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-charcoal">
+                          {items.length} items
+                        </span>
+                      </div>
+                    </Reveal>
+
+                    <Stagger
+                      className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                      stagger={0.05}
+                    >
+                      {items.map((item) => (
+                        <StaggerItem key={item.slug} className="h-full">
+                          <ItemCard item={item} className="h-full" />
+                        </StaggerItem>
+                      ))}
+                    </Stagger>
+                  </section>
+                );
+              })}
+          </div>
+        ) : active === "deals" ? (
+          /* ============================================================
+             "DEALS / OFFERS" SINGLE CATEGORY VIEW
+             ============================================================ */
+          <div className="space-y-6">
+            <Reveal>
+              <div className="rounded-2xl bg-charcoal text-cream p-5 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-ember-light">
+                    Category #1 · Main Revenue Driver
+                  </span>
+                  <h2 className="t-section-sm sm:t-section mt-1 text-white uppercase tracking-wide">
+                    Deals & Bundles
+                  </h2>
+                  <p className="mt-1 text-[13.5px] text-cream/70 max-w-xl">
+                    Every deal is a customizable bundle of slots. Pick your burger, sides, dips, and drinks with optional upgrades.
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[12px] font-bold text-gold">
+                  <Tag className="h-4 w-4" />
+                  Save up to 40% on Combos
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Grid: 4 cols desktop, 2 cols tablet, 1-2 mobile horizontal card */}
+            <Stagger
+              className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              stagger={0.05}
+            >
+              {filteredDeals.map((deal, i) => (
+                <StaggerItem key={deal.id} className="h-full">
+                  <DealCard
+                    deal={deal}
+                    onSelect={(d) => setOpenDeal(d)}
+                    priority={i < 4}
+                    className="h-full"
+                  />
+                </StaggerItem>
+              ))}
+            </Stagger>
           </div>
         ) : (
-          /* Flat grid */
-          <Stagger
-            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            stagger={0.045}
-          >
-            {results.map((item, i) => (
-              <StaggerItem key={item.slug} className="h-full">
-                <ItemCard item={item} priority={i < 4} className="h-full" />
-              </StaggerItem>
-            ))}
-          </Stagger>
+          /* ============================================================
+             OTHER SINGLE CATEGORY VIEW (Burgers, Chicken, Sides, etc.)
+             ============================================================ */
+          <div className="space-y-6">
+            {/* Burgers Sub-Split Filter (Chicken / Beef / Veg) */}
+            {active === "burgers" && (
+              <div className="flex flex-wrap items-center gap-2 border-b border-charcoal/10 pb-4">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-slate-brand mr-2">
+                  Patty type:
+                </span>
+                {(
+                  [
+                    { id: "all", label: "All Burgers" },
+                    { id: "beef", label: "Beef Smashes" },
+                    { id: "chicken", label: "Crispy & Grilled Chicken" },
+                    { id: "veg", label: "Vegetarian / Halloumi" },
+                  ] as const
+                ).map((sub) => (
+                  <button
+                    key={sub.id}
+                    onClick={() => setBurgerFilter(sub.id)}
+                    className={cn(
+                      "rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-all",
+                      burgerFilter === sub.id
+                        ? "bg-ember text-white shadow-sm"
+                        : "bg-white border border-charcoal/12 text-charcoal hover:border-charcoal/30",
+                    )}
+                  >
+                    {sub.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Grid: 4 cols desktop, 2 cols tablet, 1-2 mobile */}
+            <Stagger
+              className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              stagger={0.045}
+            >
+              {filteredRegularItems.map((item, i) => (
+                <StaggerItem key={item.slug} className="h-full">
+                  <ItemCard item={item} priority={i < 4} className="h-full" />
+                </StaggerItem>
+              ))}
+            </Stagger>
+          </div>
         )}
 
         {/* Allergen note */}
         <section
           id="allergens"
-          className="mt-12 rounded-3xl border border-charcoal/10 bg-white p-7 sm:p-9"
+          className="mt-14 rounded-3xl border border-charcoal/10 bg-white p-7 sm:p-9"
         >
           <h2 className="t-section-sm uppercase tracking-wide text-charcoal">
             Allergens & nutrition
@@ -333,16 +584,6 @@ export function MenuBrowser() {
               </span>
             ))}
           </div>
-          <p className="mt-6 text-[13px] text-slate-brand">
-            Need the full breakdown?{" "}
-            <a
-              href="mailto:hello@blazeandbun.pk?subject=Allergen%20information"
-              className="font-bold text-ember underline underline-offset-4"
-            >
-              Email our kitchen team
-            </a>{" "}
-            and we'll send you the complete allergen matrix.
-          </p>
         </section>
       </div>
 
@@ -392,11 +633,18 @@ export function MenuBrowser() {
         )}
       </AnimatePresence>
 
-      {/* Deep-link / shared configurator */}
+      {/* Deep-link / item modal */}
       <ItemModal
         item={openItem}
         open={Boolean(openItem)}
         onClose={() => setOpenItem(null)}
+      />
+
+      {/* Deal bundle modal */}
+      <DealModal
+        deal={openDeal}
+        open={Boolean(openDeal)}
+        onClose={() => setOpenDeal(null)}
       />
     </>
   );
@@ -407,24 +655,41 @@ function Pill({
   onClick,
   label,
   count,
+  badge,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   count: number;
+  badge?: string;
 }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "shrink-0 rounded-full px-4 py-2.5 text-[12.5px] font-bold transition-all",
+        "relative shrink-0 rounded-full px-4 py-2.5 text-[12.5px] font-bold transition-all flex items-center gap-1.5",
         active
-          ? "bg-charcoal text-cream"
+          ? "bg-charcoal text-cream shadow-sm"
           : "bg-charcoal/6 text-slate-brand hover:bg-charcoal/12 hover:text-charcoal",
       )}
     >
-      {label}
-      <span className={cn("ml-1.5 text-[11px]", active ? "text-cream/50" : "text-slate-brand/60")}>
+      <span>{label}</span>
+      {badge && (
+        <span
+          className={cn(
+            "rounded-full px-1.5 py-0.2 text-[9px] font-black uppercase tracking-wider",
+            active ? "bg-ember text-white" : "bg-ember/15 text-ember-dark",
+          )}
+        >
+          {badge}
+        </span>
+      )}
+      <span
+        className={cn(
+          "ml-0.5 text-[11px]",
+          active ? "text-cream/60" : "text-slate-brand/60",
+        )}
+      >
         {count}
       </span>
     </button>

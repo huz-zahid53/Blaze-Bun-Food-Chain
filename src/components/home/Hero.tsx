@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight, Flame, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SectionDivider } from "@/components/ui/SectionDivider";
 import { heroStats } from "@/data/content";
 import { brand } from "@/config/brand";
 
@@ -295,6 +296,7 @@ export function Hero() {
               ))}
             </dl>
           </div>
+          <SectionDivider className="absolute inset-x-0 bottom-0 z-30" tone="dark" />
         </div>
       </div>
     </section>

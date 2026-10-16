@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { ImageWithSkeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock } from "lucide-react";
 import { posts } from "@/data/blog";
@@ -37,16 +37,15 @@ export default function BlogPage() {
             className="group grid overflow-hidden rounded-[32px] border border-charcoal/8 bg-white lg:grid-cols-2"
           >
             <div className="relative aspect-[16/10] overflow-hidden lg:aspect-auto lg:min-h-[420px]">
-              {lead.image ? (
-                <Image
-                  src={lead.image}
-                  alt={lead.title}
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
-                />
-              ) : (
+{lead.image ? (
+                 <ImageWithSkeleton
+                   src={lead.image}
+                   alt={lead.title}
+                   fill
+                   sizes="(max-width: 1024px) 100vw, 50vw"
+                   className="object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+                 />
+               ) : (
                 <MediaFrame
                   hue={lead.hue}
                   glyph="burger"
@@ -119,15 +118,15 @@ export default function BlogPage() {
                 className="group flex h-full flex-col overflow-hidden rounded-[26px] border border-charcoal/8 bg-white transition-all hover:-translate-y-1.5 hover:shadow-[0_24px_50px_-24px_rgba(16,14,12,0.45)]"
               >
                 <div className="relative aspect-[16/10] overflow-hidden">
-                  {post.image ? (
-                    <Image
-                      src={post.image}
-                      alt={post.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
-                    />
-                  ) : (
+{post.image ? (
+                     <ImageWithSkeleton
+                       src={post.image}
+                       alt={post.title}
+                       fill
+                       sizes="(max-width: 768px) 100vw, 33vw"
+                       className="object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+                     />
+                   ) : (
                     <MediaFrame
                       hue={post.hue}
                       glyph="burger"
