@@ -22,6 +22,7 @@ import { brand } from "@/config/brand";
 import { branches } from "@/data/branches";
 import { menuItems } from "@/data/menu";
 import { MediaFrame } from "@/components/ui/MediaFrame";
+import { CartSkeleton } from "@/components/ui/Skeleton";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { ItemModal } from "@/components/menu/ItemModal";
 import { useToast } from "@/components/ui/Toast";
@@ -69,7 +70,11 @@ export default function CartPage() {
     0,
   );
 
-  if (hydrated && visible.length === 0) {
+  // The bucket contents arrive from cloud hydration — show the cart skeleton
+  // until that resolves so we never flash an empty bucket by mistake.
+  if (!hydrated) return <CartSkeleton />;
+
+  if (visible.length === 0) {
     return (
       <>
         <PageHero
@@ -98,6 +103,7 @@ export default function CartPage() {
                 <button
                   key={i.slug}
                   onClick={() => setUpsell(i)}
+                  data-cursor="cart"
                   className="group h-full w-full overflow-hidden rounded-2xl border border-charcoal/8 bg-white text-left transition-transform hover:-translate-y-1"
                 >
                   <MediaFrame

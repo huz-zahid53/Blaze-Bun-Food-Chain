@@ -160,7 +160,7 @@ export function ItemModal({ item, open, onClose }: Props) {
             </button>
 
             {/* Media */}
-            <div className="relative shrink-0 md:w-[46%]">
+            <div className="relative shrink-0 md:w-[46%]" data-cursor="food">
               <MediaFrame
                 src={item.image}
                 hue={item.hue}
@@ -372,6 +372,7 @@ export function ItemModal({ item, open, onClose }: Props) {
                   <button
                     onClick={() => handleAdd(true)}
                     disabled={missingRequired}
+                    data-cursor="cart"
                     className="flex flex-1 items-center justify-center gap-2 rounded-full bg-ember px-5 py-4 text-[13px] font-black uppercase tracking-wider text-white transition-all hover:bg-ember-dark active:scale-[0.98] disabled:opacity-40"
                   >
                     <ShoppingBag className="h-4 w-4" strokeWidth={2.6} />
@@ -380,6 +381,7 @@ export function ItemModal({ item, open, onClose }: Props) {
                   <button
                     onClick={() => handleAdd(false)}
                     disabled={missingRequired}
+                    data-cursor="cart"
                     className="flex items-center justify-center gap-1.5 rounded-full bg-charcoal px-6 py-4 text-[13px] font-black uppercase tracking-wider text-cream transition-all hover:bg-ink active:scale-[0.98] disabled:opacity-40"
                   >
                     <Plus className="h-4 w-4" strokeWidth={3} />

@@ -65,9 +65,12 @@ export interface HealthReport {
 
 let cachedHealth: HealthReport | null = null;
 
-export async function getHealth(force = false): Promise<HealthReport> {
+export async function getHealth(
+  force = false,
+  init?: RequestInit,
+): Promise<HealthReport> {
   if (cachedHealth && !force) return cachedHealth;
-  cachedHealth = await call<HealthReport>("/api/health");
+  cachedHealth = await call<HealthReport>("/api/health", init);
   return cachedHealth;
 }
 
@@ -82,8 +85,10 @@ export async function isCloudEnabled(): Promise<boolean> {
 
 /* ------------------------------------------------------------- guest state */
 
-export async function loadGuestState(): Promise<{ state: any; updatedAt: string | null }> {
-  return call("/api/state");
+export async function loadGuestState(
+  init?: RequestInit,
+): Promise<{ state: any; updatedAt: string | null }> {
+  return call("/api/state", init);
 }
 
 export async function saveGuestState(state: unknown): Promise<void> {

@@ -57,6 +57,7 @@ export function DealsShowcase({ compact = false }: { compact?: boolean }) {
             <StaggerItem key={deal.id} className="h-full">
               <Link
                 href={`/deals#${deal.slug}`}
+                data-cursor="food"
                 className={cn(
                   "group relative flex h-full flex-col overflow-hidden rounded-[26px] text-cream transition-transform duration-500 hover:-translate-y-2",
                   deal.kind === "midnight"

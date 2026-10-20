@@ -246,6 +246,7 @@ export function CartDrawer() {
                         <button
                           key={extra.slug}
                           type="button"
+                          data-cursor="cart"
                           onClick={() => {
                             addLine({
                               slug: extra.slug,

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { TrackBoard } from "@/components/orders/TrackBoard";
+import { TrackSkeleton } from "@/components/ui/Skeleton";
 
 export const metadata: Metadata = {
   title: "Track Your Order",
@@ -10,15 +11,7 @@ export const metadata: Metadata = {
 
 export default function TrackPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[60vh] items-center justify-center bg-charcoal">
-          <span className="font-display text-2xl uppercase tracking-[0.3em] text-cream/40">
-            Locating your order…
-          </span>
-        </div>
-      }
-    >
+    <Suspense fallback={<TrackSkeleton />}>
       <TrackBoard />
     </Suspense>
   );

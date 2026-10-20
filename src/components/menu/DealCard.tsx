@@ -20,6 +20,7 @@ export function DealCard({ deal, onSelect, priority, className }: Props) {
 
   return (
     <motion.article
+      data-cursor="food"
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 360, damping: 28 }}
       onClick={() => onSelect(deal)}

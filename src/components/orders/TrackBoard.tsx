@@ -22,6 +22,7 @@ import {
 import { useStore, type PlacedOrder, type OrderStatus } from "@/store/useStore";
 import { getOrder } from "@/lib/cloud";
 import { PageHero } from "@/components/ui/PageHero";
+import { TrackSkeleton } from "@/components/ui/Skeleton";
 import { DotGridOverlay } from "@/components/ui/SectionDivider";
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import { formatPKR, cn, timeAgo } from "@/lib/utils";
@@ -167,6 +168,10 @@ export function TrackBoard() {
     }));
   }
 
+  // Until cloud hydration resolves we don't know if the customer has orders —
+  // show the tracking skeleton rather than flashing the empty state.
+  if (!hydrated) return <TrackSkeleton />;
+
   return (
     <>
       <PageHero
@@ -199,11 +204,7 @@ export function TrackBoard() {
       </PageHero>
 
       <section className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 sm:py-12 lg:px-8">
-        {!hydrated ? (
-          <div className="py-16 text-center text-[14px] text-slate-brand">
-            Loading your orders…
-          </div>
-        ) : orders.length === 0 ? (
+        {orders.length === 0 ? (
           <div className="mx-auto max-w-lg rounded-3xl border border-dashed border-charcoal/15 px-6 py-16 text-center">
             <span className="mx-auto grid h-20 w-20 place-items-center rounded-3xl bg-charcoal/5">
               <PackageCheck className="h-9 w-9 text-charcoal/25" strokeWidth={1.6} />

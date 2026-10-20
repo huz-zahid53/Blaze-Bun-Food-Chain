@@ -12,9 +12,20 @@ import { CartDrawer } from "./CartDrawer";
 import { OrderFlowModal } from "./OrderFlowModal";
 import { ToastHost } from "@/components/ui/Toast";
 import { FloatingCart } from "@/components/ui/FloatingCart";
+import { CustomCursor } from "@/components/ui/CustomCursor";
 
 /** Debounce window for pushing cart changes to the cloud. */
 const SAVE_DEBOUNCE_MS = 700;
+
+/**
+ * Hard ceiling on the initial cloud load. `call` has no timeout of its own, so
+ * a request that never settles would leave `hydrated` false forever — the pages
+ * would sit on their skeletons and the location picker would never open, because
+ * the LOAD effect's `finally` only runs once the request settles. Bounding the
+ * load lets us abort a hung request so `finally` always fires and the storefront
+ * (and the picker) recover.
+ */
+const LOAD_TIMEOUT_MS = 8000;
 
 /**
  * Client-side shell.
@@ -44,9 +55,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
   useEffect(() => {
     cancelled.current = false;
 
+    // Abort a hung request so `finally` always runs (see LOAD_TIMEOUT_MS).
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
+    const opts = { signal: controller.signal };
+
     (async () => {
       try {
-        const health = await getHealth();
+        const health = await getHealth(false, opts);
         if (cancelled.current) return;
 
         if (!health.configured) {
@@ -57,7 +73,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
         }
 
         setCloudMode("cloud");
-        const { state } = await loadGuestState();
+        const { state } = await loadGuestState(opts);
         if (cancelled.current) return;
         applyRemoteState(state);
         lastSaved.current = state ? JSON.stringify(state) : "";
@@ -65,9 +81,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
         if (cancelled.current) return;
         setCloudMode("local");
         setCloudError(
-          err instanceof ApiError ? err.message : "Could not reach cloud storage.",
+          err instanceof ApiError
+            ? err.message
+            : err instanceof DOMException && err.name === "AbortError"
+              ? "Cloud storage took too long to respond."
+              : "Could not reach cloud storage.",
         );
       } finally {
+        clearTimeout(timeout);
         if (!cancelled.current) {
           setHydrated(true);
           // Load is now definitive. If the customer has not confirmed a
@@ -83,6 +104,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled.current = true;
+      controller.abort();
+      clearTimeout(timeout);
       if (timer.current) clearTimeout(timer.current);
     };
   }, [applyRemoteState, setCloudError, setCloudMode, setHydrated]);
@@ -133,6 +156,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <OrderFlowModal />
       <FloatingCart />
       <ToastHost />
+      <CustomCursor />
     </>
   );
 }

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { MenuBrowser } from "@/components/menu/MenuBrowser";
+import { MenuPageSkeleton } from "@/components/ui/Skeleton";
 
 export const metadata: Metadata = {
   title: "Full Menu",
@@ -10,15 +11,7 @@ export const metadata: Metadata = {
 
 export default function MenuPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[60vh] items-center justify-center bg-charcoal">
-          <span className="font-display text-2xl uppercase tracking-[0.3em] text-cream/40">
-            Firing up the grill…
-          </span>
-        </div>
-      }
-    >
+    <Suspense fallback={<MenuPageSkeleton />}>
       <MenuBrowser />
     </Suspense>
   );

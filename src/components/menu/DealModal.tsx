@@ -142,7 +142,10 @@ export function DealModal({ deal, open, onClose }: Props) {
 
             {/* Deal Hero Header */}
             <div className="relative shrink-0 border-b border-charcoal/10 bg-charcoal text-cream">
-              <div className="relative aspect-[21/9] sm:aspect-[24/8] min-h-[160px] w-full overflow-hidden">
+              <div
+                className="relative aspect-[21/9] sm:aspect-[24/8] min-h-[160px] w-full overflow-hidden"
+                data-cursor="food"
+              >
                 <MediaFrame
                   src={deal.image}
                   hue={deal.hue}
@@ -314,6 +317,7 @@ export function DealModal({ deal, open, onClose }: Props) {
                   <button
                     type="button"
                     onClick={() => handleAdd(false)}
+                    data-cursor="cart"
                     className="flex-1 sm:flex-none rounded-full border-2 border-charcoal/15 px-5 py-3 text-[12px] font-black uppercase tracking-wider text-charcoal transition-colors hover:border-charcoal hover:bg-charcoal hover:text-cream"
                   >
                     Add & Continue
@@ -321,6 +325,7 @@ export function DealModal({ deal, open, onClose }: Props) {
                   <button
                     type="button"
                     onClick={() => handleAdd(true)}
+                    data-cursor="cart"
                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-full bg-ember px-6 py-3 text-[12px] font-black uppercase tracking-wider text-white shadow-lg shadow-ember/30 transition-transform hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Plus className="h-4 w-4 stroke-[3]" />

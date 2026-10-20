@@ -29,6 +29,7 @@ export function ItemCard({ item, priority, className }: Props) {
   return (
     <>
       <motion.article
+        data-cursor="food"
         whileHover={{ y: -6 }}
         transition={{ type: "spring", stiffness: 380, damping: 28 }}
         className={cn(

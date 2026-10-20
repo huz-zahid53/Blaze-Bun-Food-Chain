@@ -37,6 +37,7 @@ export default function DealsPage() {
               <Reveal key={deal.id} delay={i * 0.06}>
                 <article
                   id={deal.slug}
+                  data-cursor="food"
                   className={cn(
                     "scroll-mt-32 overflow-hidden rounded-[32px] transition-shadow hover:shadow-[0_30px_70px_-40px_rgba(16,14,12,0.7)]",
                     midnight

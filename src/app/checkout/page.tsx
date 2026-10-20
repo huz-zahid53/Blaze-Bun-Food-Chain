@@ -30,6 +30,7 @@ import { findZone } from "@/data/zones";
 import { cities } from "@/config/brand";
 import { PageHero } from "@/components/ui/PageHero";
 import { MediaFrame } from "@/components/ui/MediaFrame";
+import { CheckoutSkeleton } from "@/components/ui/Skeleton";
 import { formatPKR, cn, isValidEmail, isValidPhone } from "@/lib/utils";
 
 const steps = ["Your details", "Delivery", "Payment"] as const;
@@ -266,7 +267,11 @@ export default function CheckoutPage() {
     router.push(`/track?new=${order.number}`);
   }
 
-  if (hydrated && visible.length === 0) {
+  // Wait for cloud hydration before showing the form so the review list,
+  // totals and branch all reflect the restored bucket.
+  if (!hydrated) return <CheckoutSkeleton />;
+
+  if (visible.length === 0) {
     return (
       <PageHero
           image="/media/hero/bg-kitchen.jpg"
