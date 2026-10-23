@@ -8,9 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "test:pricing": "tsc -p tsconfig.test.json && node scripts/test-pricing.js",
-    "qa": "npm run test && npm run build",
+    "test:payments": "tsc -p tsconfig.test.json && node scripts/test-payments.js",
     "test:hydration": "tsc -p tsconfig.test.json && node scripts/test-hydration.js",
-    "test": "tsc -p tsconfig.test.json && node scripts/test-pricing.js && node scripts/test-hydration.js"
+    "test": "tsc -p tsconfig.test.json && node scripts/test-pricing.js && node scripts/test-hydration.js && node scripts/test-payments.js",
+    "qa": "npm run test && npm run build"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

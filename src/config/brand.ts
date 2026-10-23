@@ -105,6 +105,13 @@ export const paymentMethods = [
     kind: "cash" as const,
   },
   {
+    id: "cash_on_card",
+    label: "Cash on Card",
+    blurb: "Pay by card at delivery (rider POS terminal)",
+    fee: 0,
+    kind: "card_delivery" as const,
+  },
+  {
     id: "card",
     label: "Credit / Debit Card",
     blurb: "Visa, Mastercard, UnionPay",

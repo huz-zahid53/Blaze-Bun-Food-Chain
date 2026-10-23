@@ -5,21 +5,25 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   Banknote,
   Bike,
   CalendarDays,
   Check,
+  CheckCircle2,
   CreditCard,
   Lock,
   MapPin,
   PartyPopper,
   ShieldCheck,
   Smartphone,
+  Sparkles,
   Store,
   Users,
   Wallet,
+  XCircle,
 } from "lucide-react";
 import { useStore, computeTotals, type PlacedOrder, type ServerOrderConfirmation } from "@/store/useStore";
 import { createOrder, ApiError } from "@/lib/cloud";
@@ -35,8 +39,9 @@ import { formatPKR, cn, isValidEmail, isValidPhone } from "@/lib/utils";
 
 const steps = ["Your details", "Delivery", "Payment"] as const;
 
-const paymentIcon = {
+const paymentIcon: Record<string, typeof Banknote> = {
   cash: Banknote,
+  card_delivery: CreditCard,
   card: CreditCard,
   wallet: Smartphone,
   bank: Wallet,
@@ -59,8 +64,10 @@ export default function CheckoutPage() {
 
   const [step, setStep] = useState(0);
   const [placing, setPlacing] = useState(false);
-  /** Set when the cloud rejected or could not be reached for this order. */
+  /** Set when payment or cloud creation failed or was declined. */
   const [placeError, setPlaceError] = useState<string | null>(null);
+  /** Interactive demo payment outcome for online methods (card, jazzcash, easypaisa, bank). */
+  const [demoOutcome, setDemoOutcome] = useState<"success" | "failure" | "cancelled">("success");
   const push = useToast((s) => s.push);
 
   const [form, setForm] = useState({
@@ -77,10 +84,6 @@ export default function CheckoutPage() {
     guests: "",
     cateringNotes: "",
     payment: "cod",
-    cardNumber: "",
-    cardExpiry: "",
-    cardCvc: "",
-    walletNumber: "",
     saveAddress: true,
     agree: false,
   });
@@ -130,16 +133,6 @@ export default function CheckoutPage() {
         e.scheduledTime = "Choose a time.";
     }
     if (step === 2) {
-      if (form.payment === "card") {
-        if (form.cardNumber.replace(/\s/g, "").length < 15)
-          e.cardNumber = "Enter a valid card number.";
-        if (!/^\d{2}\/\d{2}$/.test(form.cardExpiry)) e.cardExpiry = "MM/YY";
-        if (form.cardCvc.length < 3) e.cardCvc = "CVC";
-      }
-      if (paymentMethods.find((p) => p.id === form.payment)?.kind === "wallet") {
-        if (!isValidPhone(form.walletNumber))
-          e.walletNumber = "Enter your mobile wallet number.";
-      }
       if (!form.agree) e.agree = "Please accept the terms to continue.";
     }
     return e;
@@ -183,12 +176,8 @@ export default function CheckoutPage() {
       slot: form.slot === "asap" ? "As soon as possible" : form.scheduledTime,
     };
 
-    /**
-     * Cloud first. When Supabase is wired up the API re-prices every line
-     * against the menu and issues the order number, so its figures win. If the
-     * call fails we still record the order locally — losing a customer's order
-     * is worse than a temporary sync gap.
-     */
+    const isSimulatedOnline = form.payment !== "cod" && form.payment !== "cash_on_card";
+
     let confirmation: ServerOrderConfirmation | undefined;
 
     if (useStore.getState().cloudMode === "cloud") {
@@ -200,6 +189,7 @@ export default function CheckoutPage() {
           tip,
           payment: form.payment,
           paymentLabel,
+          demoOutcome: isSimulatedOnline ? demoOutcome : undefined,
           branchId: branch.id,
           branchName: `${branch.name}, ${branch.city}`,
           zoneId: orderType === "delivery" ? zoneId : null,
@@ -211,6 +201,7 @@ export default function CheckoutPage() {
           id: res.id,
           number: res.number,
           loyaltyEarned: res.totals.loyaltyEarned,
+          payment: res.payment,
           totals: {
             subtotal: res.totals.subtotal,
             deliveryFee: res.totals.deliveryFee,
@@ -222,23 +213,38 @@ export default function CheckoutPage() {
           },
         };
 
-        // The server may have dropped a coupon that no longer qualifies.
         if (res.totals.couponRejected) {
           push({ message: res.totals.couponRejected, tone: "info" });
         }
       } catch (err) {
+        setPlacing(false);
         const message =
-          err instanceof ApiError ? err.message : "Could not reach the server.";
+          err instanceof ApiError ? err.message : "Could not complete order.";
         setPlaceError(message);
         push({
-          message:
-            "Cloud save failed — your order is recorded on this device only.",
+          message,
           tone: "error",
         });
+        // Important: Stop here! Do not create local order or navigate when payment failed or was declined.
+        return;
       }
     } else {
-      // No cloud: keep the original simulated-payment beat.
-      await new Promise((r) => setTimeout(r, 900));
+      // Offline / Local-only mode (when cloud DB is not configured)
+      await new Promise((r) => setTimeout(r, 650));
+      if (isSimulatedOnline && demoOutcome === "failure") {
+        setPlacing(false);
+        const msg = `${paymentLabel} — payment declined. Insufficient funds (simulated demo).`;
+        setPlaceError(msg);
+        push({ message: msg, tone: "error" });
+        return;
+      }
+      if (isSimulatedOnline && demoOutcome === "cancelled") {
+        setPlacing(false);
+        const msg = `${paymentLabel} — payment was cancelled by customer (simulated demo).`;
+        setPlaceError(msg);
+        push({ message: msg, tone: "info" });
+        return;
+      }
     }
 
     const payload: Omit<
@@ -668,28 +674,44 @@ export default function CheckoutPage() {
                 {step === 2 && (
                   <div className="space-y-5">
                     <div className="rounded-3xl border border-charcoal/8 bg-white p-6 sm:p-8">
-                      <h2 className="t-section-sm uppercase tracking-wide text-charcoal">
-                        How are you paying?
-                      </h2>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h2 className="t-section-sm uppercase tracking-wide text-charcoal">
+                            How are you paying?
+                          </h2>
+                          <p className="mt-1 text-[13px] text-slate-brand">
+                            Choose between doorstep delivery payments or interactive demo simulators.
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/5 px-3 py-1 text-[11px] font-bold text-charcoal">
+                          <ShieldCheck className="h-3.5 w-3.5 text-fresh" />
+                          Zero-Budget Hybrid
+                        </span>
+                      </div>
 
+                      {/* Payment method cards */}
                       <div className="mt-5 space-y-2.5">
                         {paymentMethods.map((p) => {
-                          const Icon = paymentIcon[p.kind];
+                          const Icon = paymentIcon[p.kind] ?? Banknote;
                           const active = form.payment === p.id;
+                          const isOnline = p.id !== "cod" && p.id !== "cash_on_card";
                           return (
                             <button
                               key={p.id}
-                              onClick={() => setForm({ ...form, payment: p.id })}
+                              onClick={() => {
+                                setForm({ ...form, payment: p.id });
+                                setPlaceError(null);
+                              }}
                               className={cn(
-                                "flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition-colors",
+                                "flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all",
                                 active
-                                  ? "border-ember bg-ember/6"
-                                  : "border-charcoal/10 hover:border-charcoal/25",
+                                  ? "border-ember bg-ember/6 ring-1 ring-ember/25"
+                                  : "border-charcoal/10 hover:border-charcoal/25 bg-white",
                               )}
                             >
                               <span
                                 className={cn(
-                                  "grid h-11 w-11 shrink-0 place-items-center rounded-xl",
+                                  "grid h-11 w-11 shrink-0 place-items-center rounded-xl transition-colors",
                                   active
                                     ? "bg-ember text-white"
                                     : "bg-charcoal/6 text-charcoal",
@@ -697,17 +719,28 @@ export default function CheckoutPage() {
                               >
                                 <Icon className="h-5 w-5" strokeWidth={2.3} />
                               </span>
-                              <span className="flex-1">
-                                <span className="block text-[13.5px] font-black text-charcoal">
-                                  {p.label}
+                              <span className="flex-1 min-w-0">
+                                <span className="flex items-center gap-2">
+                                  <span className="block text-[13.5px] font-black text-charcoal truncate">
+                                    {p.label}
+                                  </span>
+                                  {isOnline ? (
+                                    <span className="shrink-0 rounded-full bg-ember/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-ember">
+                                      Simulator
+                                    </span>
+                                  ) : (
+                                    <span className="shrink-0 rounded-full bg-fresh/12 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-fresh">
+                                      At Delivery
+                                    </span>
+                                  )}
                                 </span>
-                                <span className="block text-[12px] text-slate-brand">
+                                <span className="block text-[12px] text-slate-brand truncate">
                                   {p.blurb}
                                 </span>
                               </span>
                               <span
                                 className={cn(
-                                  "grid h-5 w-5 shrink-0 place-items-center rounded-full border-2",
+                                  "grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 transition-colors",
                                   active ? "border-ember bg-ember" : "border-charcoal/25",
                                 )}
                               >
@@ -720,103 +753,233 @@ export default function CheckoutPage() {
                         })}
                       </div>
 
-                      {/* Card fields */}
-                      <AnimatePresence>
-                        {form.payment === "card" && (
+                      {/* Dynamic payment detail panels */}
+                      <AnimatePresence mode="wait">
+                        {/* 1. Cash on Delivery (COD) */}
+                        {form.payment === "cod" && (
                           <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="overflow-hidden"
+                            key="cod"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            className="mt-5 rounded-2xl border border-charcoal/10 bg-amber-50/60 p-5"
                           >
-                            <div className="mt-5 grid gap-4 rounded-2xl bg-charcoal/4 p-5 sm:grid-cols-2">
-                              <Field
-                                label="Card number"
-                                required
-                                className="sm:col-span-2"
-                                value={form.cardNumber}
-                                onChange={(v) =>
-                                  setForm({
-                                    ...form,
-                                    cardNumber: v
-                                      .replace(/\D/g, "")
-                                      .slice(0, 16)
-                                      .replace(/(.{4})/g, "$1 ")
-                                      .trim(),
-                                  })
-                                }
-                                error={errors.cardNumber}
-                                placeholder="4242 4242 4242 4242"
-                              />
-                              <Field
-                                label="Expiry"
-                                required
-                                value={form.cardExpiry}
-                                onChange={(v) =>
-                                  setForm({
-                                    ...form,
-                                    cardExpiry: v
-                                      .replace(/\D/g, "")
-                                      .slice(0, 4)
-                                      .replace(/(\d{2})(\d)/, "$1/$2"),
-                                  })
-                                }
-                                error={errors.cardExpiry}
-                                placeholder="MM/YY"
-                              />
-                              <Field
-                                label="CVC"
-                                required
-                                value={form.cardCvc}
-                                onChange={(v) =>
-                                  setForm({
-                                    ...form,
-                                    cardCvc: v.replace(/\D/g, "").slice(0, 4),
-                                  })
-                                }
-                                error={errors.cardCvc}
-                                placeholder="123"
-                              />
+                            <div className="flex items-start gap-3">
+                              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-500/15 text-amber-700">
+                                <Banknote className="h-5 w-5" />
+                              </span>
+                              <div>
+                                <h4 className="text-[13.5px] font-black uppercase tracking-wider text-amber-950">
+                                  Cash on Delivery — Genuine Unpaid Order
+                                </h4>
+                                <p className="mt-1 text-[12.5px] leading-relaxed text-amber-900/80">
+                                  No advance online payment is required. You will pay{" "}
+                                  <strong className="font-black text-charcoal">
+                                    {formatPKR(totals.total)}
+                                  </strong>{" "}
+                                  in cash directly to the rider upon delivery.
+                                </p>
+                                <p className="mt-2 text-[11.5px] font-semibold text-amber-800">
+                                  ✓ Rider hands over official paper receipt · Exact change appreciated.
+                                </p>
+                              </div>
                             </div>
                           </motion.div>
                         )}
 
-                        {paymentMethods.find((p) => p.id === form.payment)?.kind ===
-                          "wallet" && (
+                        {/* 2. Cash on Card (POS machine at door) */}
+                        {form.payment === "cash_on_card" && (
                           <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="overflow-hidden"
+                            key="cash_on_card"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            className="mt-5 rounded-2xl border border-charcoal/10 bg-blue-50/60 p-5"
                           >
-                            <div className="mt-5 rounded-2xl bg-charcoal/4 p-5">
-                              <Field
-                                label="Mobile wallet number"
-                                required
-                                type="tel"
-                                value={form.walletNumber}
-                                onChange={(v) =>
-                                  setForm({ ...form, walletNumber: v })
-                                }
-                                error={errors.walletNumber}
-                                placeholder="0300 1234567"
-                              />
-                              <p className="mt-3 text-[12px] text-slate-brand">
-                                You'll receive a payment prompt on this number
-                                once the order is accepted.
-                              </p>
+                            <div className="flex items-start gap-3">
+                              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-500/15 text-blue-700">
+                                <CreditCard className="h-5 w-5" />
+                              </span>
+                              <div>
+                                <h4 className="text-[13.5px] font-black uppercase tracking-wider text-blue-950">
+                                  Cash on Card — Rider POS Terminal
+                                </h4>
+                                <p className="mt-1 text-[12.5px] leading-relaxed text-blue-900/80">
+                                  Your rider will bring a wireless bank POS machine to your doorstep.
+                                  You can tap, insert, or swipe any Pakistani debit or credit card for{" "}
+                                  <strong className="font-black text-charcoal">
+                                    {formatPKR(totals.total)}
+                                  </strong>
+                                  .
+                                </p>
+                                <p className="mt-2 text-[11.5px] font-semibold text-blue-800">
+                                  ✓ Accepts Visa, Mastercard & PayPak · Order remains unpaid until tapped at door.
+                                </p>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {/* 3. Online Simulated Payments (Card, JazzCash, EasyPaisa, Bank) */}
+                        {form.payment !== "cod" && form.payment !== "cash_on_card" && (
+                          <motion.div
+                            key="simulator"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            className="mt-5 rounded-2xl border-2 border-ember/20 bg-gradient-to-b from-charcoal/[0.03] to-ember/[0.02] p-5 sm:p-6"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-charcoal/10 pb-4">
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-ember" />
+                                <h4 className="text-[13px] font-black uppercase tracking-wider text-charcoal">
+                                  Interactive Payment Simulator
+                                </h4>
+                              </div>
+                              <span className="rounded-full bg-charcoal/8 px-2.5 py-0.5 text-[11px] font-bold text-charcoal">
+                                Portfolio Mode · Zero Gateway Fees
+                              </span>
+                            </div>
+
+                            <p className="mt-3 text-[12.5px] leading-relaxed text-slate-brand">
+                              No live payment gateway credentials required. Test the full payment lifecycle,
+                              ledger audit entries, and live tracking reactions by choosing a test outcome below:
+                            </p>
+
+                            {/* Demo outcome selector */}
+                            <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
+                              {/* Option A: Success */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDemoOutcome("success");
+                                  setPlaceError(null);
+                                }}
+                                className={cn(
+                                  "rounded-xl border-2 p-3 text-left transition-all",
+                                  demoOutcome === "success"
+                                    ? "border-fresh bg-fresh/10 text-charcoal ring-1 ring-fresh/30"
+                                    : "border-charcoal/10 bg-white hover:border-charcoal/25",
+                                )}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle2
+                                    className={cn(
+                                      "h-4 w-4 shrink-0",
+                                      demoOutcome === "success" ? "text-fresh" : "text-slate-brand",
+                                    )}
+                                  />
+                                  <span className="text-[12px] font-black uppercase tracking-wider">
+                                    Approved
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-[11px] text-slate-brand leading-snug">
+                                  Simulates successful payment. Marks order Paid with reference.
+                                </p>
+                              </button>
+
+                              {/* Option B: Failure / Decline */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDemoOutcome("failure");
+                                  setPlaceError(null);
+                                }}
+                                className={cn(
+                                  "rounded-xl border-2 p-3 text-left transition-all",
+                                  demoOutcome === "failure"
+                                    ? "border-ember bg-ember/10 text-charcoal ring-1 ring-ember/30"
+                                    : "border-charcoal/10 bg-white hover:border-charcoal/25",
+                                )}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <XCircle
+                                    className={cn(
+                                      "h-4 w-4 shrink-0",
+                                      demoOutcome === "failure" ? "text-ember" : "text-slate-brand",
+                                    )}
+                                  />
+                                  <span className="text-[12px] font-black uppercase tracking-wider">
+                                    Decline (Test)
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-[11px] text-slate-brand leading-snug">
+                                  Simulates insufficient funds. Keeps cart safe for retry.
+                                </p>
+                              </button>
+
+                              {/* Option C: Cancelled */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDemoOutcome("cancelled");
+                                  setPlaceError(null);
+                                }}
+                                className={cn(
+                                  "rounded-xl border-2 p-3 text-left transition-all",
+                                  demoOutcome === "cancelled"
+                                    ? "border-amber-500 bg-amber-500/10 text-charcoal ring-1 ring-amber-500/30"
+                                    : "border-charcoal/10 bg-white hover:border-charcoal/25",
+                                )}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <AlertCircle
+                                    className={cn(
+                                      "h-4 w-4 shrink-0",
+                                      demoOutcome === "cancelled" ? "text-amber-600" : "text-slate-brand",
+                                    )}
+                                  />
+                                  <span className="text-[12px] font-black uppercase tracking-wider">
+                                    User Cancel
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-[11px] text-slate-brand leading-snug">
+                                  Simulates customer exiting gateway back to checkout.
+                                </p>
+                              </button>
+                            </div>
+
+                            {/* Method-specific simulated credentials display */}
+                            <div className="mt-4 rounded-xl bg-charcoal/5 p-3.5 text-[12px]">
+                              {form.payment === "card" && (
+                                <div className="flex items-center justify-between text-charcoal">
+                                  <span className="font-mono font-bold">•••• •••• •••• 4242</span>
+                                  <span className="font-semibold text-slate-brand">EXP 12/28 · VISA DEMO</span>
+                                  <span className="rounded bg-charcoal/10 px-2 py-0.5 text-[10px] font-bold">Auto-Filled</span>
+                                </div>
+                              )}
+                              {form.payment === "jazzcash" && (
+                                <div className="flex items-center justify-between text-charcoal">
+                                  <span className="font-mono font-bold">JazzCash: 0300-1234567</span>
+                                  <span className="font-semibold text-slate-brand">Wallet Verified</span>
+                                  <span className="rounded bg-charcoal/10 px-2 py-0.5 text-[10px] font-bold">1-Touch Demo</span>
+                                </div>
+                              )}
+                              {form.payment === "easypaisa" && (
+                                <div className="flex items-center justify-between text-charcoal">
+                                  <span className="font-mono font-bold">EasyPaisa: 0345-7654321</span>
+                                  <span className="font-semibold text-slate-brand">Wallet Verified</span>
+                                  <span className="rounded bg-charcoal/10 px-2 py-0.5 text-[10px] font-bold">1-Touch Demo</span>
+                                </div>
+                              )}
+                              {form.payment === "bank" && (
+                                <div className="flex items-center justify-between text-charcoal">
+                                  <span className="font-mono font-bold">IBAN: PK78BAHL000123456789</span>
+                                  <span className="font-semibold text-slate-brand">Raast / 1Link Demo</span>
+                                  <span className="rounded bg-charcoal/10 px-2 py-0.5 text-[10px] font-bold">Instant</span>
+                                </div>
+                              )}
                             </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
 
-                      <div className="mt-6 flex items-start gap-3 rounded-2xl bg-fresh/8 p-4">
-                        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-700" />
-                        <p className="text-[12.5px] leading-[1.6] text-slate-brand">
-                          Payments are processed over an encrypted connection. We
-                          never store card numbers — this demo uses simulated
-                          authorisation, so no real charge is made.
-                        </p>
+                      <div className="mt-6 flex items-start gap-3 rounded-2xl bg-charcoal/4 p-4 text-[12px] leading-relaxed text-slate-brand">
+                        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-fresh" />
+                        <span>
+                          Production orders run on Supabase database integrity. No real funds are moved;
+                          simulated payment tests exercise end-to-end ledger logging, status tracking, and cart preservation.
+                        </span>
                       </div>
                     </div>
 
@@ -964,21 +1127,23 @@ export default function CheckoutPage() {
                 </button>
               )}
 
-              {/* Cloud failure — the order was still recorded on this device,
-                  but the customer must know it did not reach the kitchen
-                  system and that they should call the branch. */}
+              {/* Payment or Cloud Error banner */}
               {placeError && (
-                <p
+                <div
                   role="alert"
-                  className="mt-4 rounded-2xl border border-ember/35 bg-ember/8 px-4 py-3 text-[13px] leading-[1.6] text-charcoal"
+                  className="mt-5 rounded-2xl border-2 border-ember/35 bg-ember/8 p-4 text-[13px] leading-[1.6] text-charcoal"
                 >
-                  <strong className="font-black">Couldn&rsquo;t reach cloud storage.</strong>{" "}
-                  Your order is saved on this device but has not been sent to the
-                  branch. Please call {brand.phone} to confirm it.
-                  <span className="mt-1 block text-[12px] text-slate-brand">
-                    {placeError}
-                  </span>
-                </p>
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-ember" />
+                    <div>
+                      <strong className="font-black text-charcoal">Payment could not be completed</strong>
+                      <p className="mt-1 text-[13px] text-slate-brand">{placeError}</p>
+                      <p className="mt-2 text-[12px] font-bold text-ember">
+                        Your bucket is completely safe. You can change your payment method, choose another test outcome, or try again.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 

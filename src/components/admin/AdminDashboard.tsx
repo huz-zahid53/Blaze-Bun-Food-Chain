@@ -51,6 +51,7 @@ const statusTone: Record<OrderStatus, string> = {
   "out-for-delivery": "bg-indigo-500/15 text-indigo-700",
   "ready-for-pickup": "bg-purple-500/15 text-purple-700",
   delivered: "bg-fresh/15 text-green-700",
+  cancelled: "bg-red-500/15 text-red-700",
 };
 
 /* ------------------------------------------------------------
@@ -95,6 +96,7 @@ export function AdminDashboard() {
   const orders = useStore((s) => s.orders);
   const advanceOrder = useStore((s) => s.advanceOrder);
   const cancelOrder = useStore((s) => s.cancelOrder);
+  const settleOrderPayment = useStore((s) => s.settleOrderPayment);
 
   const totalRevenue = tradingDays.reduce((s, d) => s + d.revenue, 0);
   const totalOrders = tradingDays.reduce((s, d) => s + d.orders, 0);
@@ -542,8 +544,21 @@ export function AdminDashboard() {
                                 <td className="py-3.5 pr-4 text-slate-brand">
                                   {o.itemCount}
                                 </td>
-                                <td className="py-3.5 pr-4 text-slate-brand">
-                                  {o.paymentLabel}
+                                <td className="py-3.5 pr-4">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[12.5px] font-semibold text-charcoal">
+                                      {o.paymentLabel}
+                                    </span>
+                                    {o.paymentStatus === "paid" ? (
+                                      <span className="inline-flex items-center gap-1 w-fit rounded-full bg-fresh/15 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-green-700">
+                                        ✓ Paid {o.isSimulated ? "(Demo)" : ""}
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 w-fit rounded-full bg-amber-500/15 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-amber-800">
+                                        Unpaid
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="py-3.5 pr-4">
                                   <span
@@ -559,7 +574,16 @@ export function AdminDashboard() {
                                   {formatPKR(o.total)}
                                 </td>
                                 <td className="py-3.5">
-                                  <div className="flex justify-end gap-1.5">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    {o.paymentStatus === "unpaid" && o.status !== "cancelled" && (
+                                      <button
+                                        onClick={() => settleOrderPayment(o.id, "Staff")}
+                                        title="Settle payment (confirm doorstep collection)"
+                                        className="rounded-lg bg-fresh/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-green-700 transition-colors hover:bg-fresh hover:text-white"
+                                      >
+                                        Settle
+                                      </button>
+                                    )}
                                     {o.status !== "delivered" && (
                                       <button
                                         onClick={() => advanceOrder(o.id)}

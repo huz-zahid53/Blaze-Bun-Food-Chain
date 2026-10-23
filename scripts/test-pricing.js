@@ -123,7 +123,7 @@ console.log("\n=== REAL MENU PRICES ARE SANE ===");
   const prices = menuItems.map((i) => i.price);
   const bad = prices.filter((p) => !Number.isFinite(p) || p <= 0);
   check(`all ${menuItems.length} menu items have positive finite prices`, bad.length, 0);
-  check("cheapest item >= 100", Math.min(...prices) >= 100, true);
+  check("cheapest item >= 50 (dips/addons)", Math.min(...prices) >= 50, true);
   check("priciest item <= 10000", Math.max(...prices) <= 10000, true);
 
   const dupes = menuItems.length - new Set(menuItems.map((i) => i.slug)).size;

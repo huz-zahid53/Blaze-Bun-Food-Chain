@@ -2,6 +2,12 @@ import { ok, fail, notConfigured, str, num, isAdminAuthorized } from "@/lib/api"
 import { db, isDbConfigured } from "@/lib/db";
 import { getGuestToken, peekGuestToken } from "@/lib/guest-token";
 import { orderNumber } from "@/lib/utils";
+import {
+  validatePaymentMethod,
+  processPayment,
+  DEMO_OUTCOMES,
+  type DemoOutcome,
+} from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
 
@@ -144,6 +150,30 @@ export async function POST(req: Request) {
     tip,
   });
 
+  // --- Payment validation & processing ----------------------------------
+  const paymentId = validatePaymentMethod(body?.payment);
+  if (!paymentId) {
+    return fail(400, "Please choose a valid payment method.");
+  }
+
+  // Demo outcome hint from the client UI (only used for simulated methods).
+  const rawOutcome = str(body?.demoOutcome, 20) || "success";
+  const demoOutcome: DemoOutcome = (DEMO_OUTCOMES as readonly string[]).includes(rawOutcome)
+    ? (rawOutcome as DemoOutcome)
+    : "success";
+
+  const paymentResult = processPayment(paymentId, totals.total, demoOutcome);
+
+  // For simulated online payments that failed or were cancelled, the order
+  // is not placed — the customer must retry with a different outcome or method.
+  if (!paymentResult.success) {
+    return fail(402, paymentResult.message, {
+      paymentStatus: paymentResult.paymentStatus,
+      reference: paymentResult.reference,
+      isSimulated: paymentResult.isSimulated,
+    });
+  }
+
   const number = str(body?.number, 24) || orderNumber();
 
   // --- Insert ----------------------------------------------------------
@@ -172,14 +202,17 @@ export async function POST(req: Request) {
       tax: totals.tax,
       tip: totals.tip,
       total: totals.total,
-      payment_method: str(body?.payment, 40) || null,
+      payment_method: paymentId,
       payment_label: str(body?.paymentLabel, 80) || null,
+      payment_status: paymentResult.paymentStatus,
+      payment_reference: paymentResult.reference,
+      is_simulated: paymentResult.isSimulated,
       coupon_code: totals.couponCode,
       item_count: itemCount,
       eta_minutes: Math.round(num(body?.etaMinutes, 5, 240, 30)),
       loyalty_earned: totals.loyaltyEarned,
     })
-    .select("id, order_number, status, total, placed_at")
+    .select("id, order_number, status, total, placed_at, payment_status, payment_reference, is_simulated")
     .single();
 
   if (orderErr) {
@@ -200,6 +233,19 @@ export async function POST(req: Request) {
     return fail(500, "Could not save order items.", itemsErr.message);
   }
 
+  // --- Payment attempt ledger row ----------------------------------------
+  // Non-critical: a failed insert here does not roll back the order.
+  await client.from("payment_attempts").insert({
+    order_id: order.id,
+    method: paymentId,
+    mode: paymentResult.mode,
+    status: paymentResult.attemptStatus,
+    reference: paymentResult.reference,
+    amount: totals.total,
+    is_simulated: paymentResult.isSimulated,
+    provider_data: paymentResult.providerData ?? {},
+  });
+
   return ok(
     {
       id: order.id,
@@ -208,6 +254,13 @@ export async function POST(req: Request) {
       total: Number(order.total),
       placedAt: order.placed_at,
       totals,
+      payment: {
+        status: paymentResult.paymentStatus,
+        reference: paymentResult.reference,
+        isSimulated: paymentResult.isSimulated,
+        message: paymentResult.message,
+        method: paymentId,
+      },
     },
     { status: 201 },
   );

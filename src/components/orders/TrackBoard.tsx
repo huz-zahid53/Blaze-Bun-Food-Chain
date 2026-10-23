@@ -18,6 +18,7 @@ import {
   Search,
   ShoppingBag,
   Store,
+  XCircle,
 } from "lucide-react";
 import { useStore, type PlacedOrder, type OrderStatus } from "@/store/useStore";
 import { getOrder } from "@/lib/cloud";
@@ -40,6 +41,7 @@ const stageMeta: Record<
   "out-for-delivery": { label: "Out for delivery", blurb: "Rider is on the way", icon: Bike },
   "ready-for-pickup": { label: "Ready for pick-up", blurb: "Come and get it", icon: PackageCheck },
   delivered: { label: "Delivered", blurb: "Enjoy it", icon: CheckCircle2 },
+  cancelled: { label: "Cancelled", blurb: "Order cancelled", icon: XCircle },
 };
 
 const chain: OrderStatus[] = [
@@ -613,13 +615,29 @@ export function TrackBoard() {
                         </div>
                         <div className="flex items-start gap-3">
                           <Receipt className="mt-0.5 h-4 w-4 shrink-0 text-ember" />
-                          <div>
+                          <div className="flex-1">
                             <dt className="text-[10.5px] font-black uppercase tracking-[0.16em] text-slate-brand">
                               Payment
                             </dt>
-                            <dd className="font-semibold text-charcoal">
-                              {order.paymentLabel}
+                            <dd className="mt-0.5 flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-charcoal">
+                                {order.paymentLabel}
+                              </span>
+                              {order.paymentStatus === "paid" ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-fresh/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-green-700">
+                                  ✓ Paid {order.isSimulated ? "(Demo)" : ""}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-800">
+                                  Pay at door
+                                </span>
+                              )}
                             </dd>
+                            {order.paymentReference && (
+                              <dd className="mt-1 text-[11px] font-mono text-slate-brand/80">
+                                Ref: {order.paymentReference}
+                              </dd>
+                            )}
                           </div>
                         </div>
                       </dl>
