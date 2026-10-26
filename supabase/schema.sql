@@ -234,7 +234,8 @@ alter table public.guest_state  enable row level security;
 -- ----------------------------------------------------------------------------
 -- Convenience view for the POS dashboard (server-side only — RLS blocks anon)
 -- ----------------------------------------------------------------------------
-create or replace view public.daily_revenue as
+create or replace view public.daily_revenue
+with (security_invoker = on) as
 select
   date_trunc('day', placed_at)       as day,
   count(*)                           as orders,
@@ -244,3 +245,12 @@ from public.orders
 where status <> 'cancelled'
 group by 1
 order by 1 desc;
+
+-- ----------------------------------------------------------------------------
+-- Explicit permissions: revoke direct client access from anon/authenticated.
+-- Server-side route handlers use service_role to access tables and views.
+-- ----------------------------------------------------------------------------
+revoke all on public.daily_revenue from anon, authenticated;
+grant select on public.daily_revenue to service_role;
+revoke all on all tables in schema public from anon, authenticated;
+grant select, insert, update, delete on all tables in schema public to service_role;

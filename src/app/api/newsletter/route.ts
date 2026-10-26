@@ -25,6 +25,9 @@ export async function POST(req: Request) {
     .select("id, email")
     .maybeSingle();
 
-  if (error) return fail(500, "Could not subscribe that email.", error.message);
+  if (error) {
+    console.error("[Newsletter Error] Could not subscribe email:", error.message);
+    return fail(500, "Could not subscribe that email.");
+  }
   return ok({ subscribed: true, alreadyExisted: !data, id: data?.id ?? null }, { status: 201 });
 }

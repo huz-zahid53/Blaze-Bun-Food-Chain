@@ -22,8 +22,11 @@ export async function GET() {
     .eq("client_token", token)
     .maybeSingle();
 
-  if (error) return fail(500, "Could not read guest state.", error.message);
-  return ok({ token, state: data?.state ?? null, updatedAt: data?.updated_at ?? null });
+  if (error) {
+    console.error("[Guest State Error] Read failed:", error.message);
+    return fail(500, "Could not read guest state.");
+  }
+  return ok({ state: data?.state ?? null, updatedAt: data?.updated_at ?? null });
 }
 
 /**
@@ -51,7 +54,10 @@ export async function PUT(req: Request) {
     { onConflict: "client_token" },
   );
 
-  if (error) return fail(500, "Could not save guest state.", error.message);
+  if (error) {
+    console.error("[Guest State Error] Save failed:", error.message);
+    return fail(500, "Could not save guest state.");
+  }
   return ok({ saved: true });
 }
 
@@ -60,6 +66,9 @@ export async function DELETE() {
   const token = await getGuestToken();
   if (!isDbConfigured) return notConfigured();
   const { error } = await db().from("guest_state").delete().eq("client_token", token);
-  if (error) return fail(500, "Could not clear guest state.", error.message);
+  if (error) {
+    console.error("[Guest State Error] Delete failed:", error.message);
+    return fail(500, "Could not clear guest state.");
+  }
   return ok({ cleared: true });
 }

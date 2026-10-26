@@ -32,8 +32,6 @@ export function dbConfigReport() {
   return {
     configured: isDbConfigured,
     missing,
-    // Safe to expose: the URL is public by design, the key never is.
-    url: url ?? null,
   };
 }
 

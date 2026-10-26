@@ -2,12 +2,6 @@ import { ok, fail, notConfigured, str, num, isAdminAuthorized } from "@/lib/api"
 import { db, isDbConfigured } from "@/lib/db";
 import { getGuestToken, peekGuestToken } from "@/lib/guest-token";
 import { orderNumber } from "@/lib/utils";
-import {
-  validatePaymentMethod,
-  processPayment,
-  DEMO_OUTCOMES,
-  type DemoOutcome,
-} from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
 
@@ -138,6 +132,7 @@ export async function POST(req: Request) {
 
   // --- Totals recomputed from brand config, not from the client ---------
   const { priceOrder } = await import("@/lib/pricing");
+  const { brand } = await import("@/config/brand");
 
   const couponCode = str(body?.couponCode, 32) || null;
   const tip = Math.round(num(body?.tip, 0, 5000, 0));
@@ -150,31 +145,12 @@ export async function POST(req: Request) {
     tip,
   });
 
-  // --- Payment validation & processing ----------------------------------
-  const paymentId = validatePaymentMethod(body?.payment);
-  if (!paymentId) {
-    return fail(400, "Please choose a valid payment method.");
+  if (totals.belowMinimum) {
+    return fail(400, `Delivery orders require a minimum spend of Rs ${brand.minOrder}.`);
   }
 
-  // Demo outcome hint from the client UI (only used for simulated methods).
-  const rawOutcome = str(body?.demoOutcome, 20) || "success";
-  const demoOutcome: DemoOutcome = (DEMO_OUTCOMES as readonly string[]).includes(rawOutcome)
-    ? (rawOutcome as DemoOutcome)
-    : "success";
-
-  const paymentResult = processPayment(paymentId, totals.total, demoOutcome);
-
-  // For simulated online payments that failed or were cancelled, the order
-  // is not placed — the customer must retry with a different outcome or method.
-  if (!paymentResult.success) {
-    return fail(402, paymentResult.message, {
-      paymentStatus: paymentResult.paymentStatus,
-      reference: paymentResult.reference,
-      isSimulated: paymentResult.isSimulated,
-    });
-  }
-
-  const number = str(body?.number, 24) || orderNumber();
+  // Generate order number strictly on the server to prevent enumeration and collision probing.
+  const number = orderNumber();
 
   // --- Insert ----------------------------------------------------------
   const client = db();
@@ -202,25 +178,19 @@ export async function POST(req: Request) {
       tax: totals.tax,
       tip: totals.tip,
       total: totals.total,
-      payment_method: paymentId,
+      payment_method: str(body?.payment, 40) || null,
       payment_label: str(body?.paymentLabel, 80) || null,
-      payment_status: paymentResult.paymentStatus,
-      payment_reference: paymentResult.reference,
-      is_simulated: paymentResult.isSimulated,
       coupon_code: totals.couponCode,
       item_count: itemCount,
       eta_minutes: Math.round(num(body?.etaMinutes, 5, 240, 30)),
       loyalty_earned: totals.loyaltyEarned,
     })
-    .select("id, order_number, status, total, placed_at, payment_status, payment_reference, is_simulated")
+    .select("id, order_number, status, total, placed_at")
     .single();
 
   if (orderErr) {
-    // A duplicate order_number means the client's proposed number collided.
-    if (String(orderErr.message).includes("orders_order_number_key")) {
-      return fail(409, "That order number already exists. Retry — a new one will be issued.");
-    }
-    return fail(500, "Could not create the order.", orderErr.message);
+    console.error("[Orders Error] Failed to create order:", orderErr.message);
+    return fail(500, "Could not create the order. Please try again.");
   }
 
   const { error: itemsErr } = await client
@@ -228,23 +198,11 @@ export async function POST(req: Request) {
     .insert(items.map((i) => ({ ...i, order_id: order.id })));
 
   if (itemsErr) {
+    console.error("[Orders Error] Failed to save order items:", itemsErr.message);
     // Roll the order back rather than leaving a header with no lines.
     await client.from("orders").delete().eq("id", order.id);
-    return fail(500, "Could not save order items.", itemsErr.message);
+    return fail(500, "Could not save order items.");
   }
-
-  // --- Payment attempt ledger row ----------------------------------------
-  // Non-critical: a failed insert here does not roll back the order.
-  await client.from("payment_attempts").insert({
-    order_id: order.id,
-    method: paymentId,
-    mode: paymentResult.mode,
-    status: paymentResult.attemptStatus,
-    reference: paymentResult.reference,
-    amount: totals.total,
-    is_simulated: paymentResult.isSimulated,
-    provider_data: paymentResult.providerData ?? {},
-  });
 
   return ok(
     {
@@ -254,13 +212,6 @@ export async function POST(req: Request) {
       total: Number(order.total),
       placedAt: order.placed_at,
       totals,
-      payment: {
-        status: paymentResult.paymentStatus,
-        reference: paymentResult.reference,
-        isSimulated: paymentResult.isSimulated,
-        message: paymentResult.message,
-        method: paymentId,
-      },
     },
     { status: 201 },
   );
@@ -282,7 +233,10 @@ export async function GET(req: Request) {
     let q = client.from("orders").select("*").order("placed_at", { ascending: false }).limit(limit);
     if (status && (STATUSES as readonly string[]).includes(status)) q = q.eq("status", status);
     const { data, error } = await q;
-    if (error) return fail(500, "Could not list orders.", error.message);
+    if (error) {
+      console.error("[Orders Error] List orders failed:", error.message);
+      return fail(500, "Could not list orders.");
+    }
     return ok({ scope: "admin", orders: data ?? [] });
   }
 
@@ -296,6 +250,9 @@ export async function GET(req: Request) {
     .order("placed_at", { ascending: false })
     .limit(50);
 
-  if (error) return fail(500, "Could not list your orders.", error.message);
+  if (error) {
+    console.error("[Orders Error] List guest orders failed:", error.message);
+    return fail(500, "Could not list your orders.");
+  }
   return ok({ scope: "guest", orders: data ?? [] });
 }

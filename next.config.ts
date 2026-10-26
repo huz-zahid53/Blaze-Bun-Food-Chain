@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    agentUpgrade: "security",
+  },
+
   /* Cache Components off: keeps every page fully dynamic & predictable
      for the client-heavy ordering flow. */
   cacheComponents: false,

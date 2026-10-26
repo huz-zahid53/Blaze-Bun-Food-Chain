@@ -48,6 +48,9 @@ export async function POST(req: Request) {
     .select("id, overall, created_at")
     .single();
 
-  if (error) return fail(500, "Could not save your feedback.", error.message);
+  if (error) {
+    console.error("[Feedback Error] Could not save feedback:", error.message);
+    return fail(500, "Could not save your feedback.");
+  }
   return ok({ received: true, id: data.id, overall }, { status: 201 });
 }

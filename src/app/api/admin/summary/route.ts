@@ -44,9 +44,18 @@ export async function GET(req: Request) {
       client.from("inventory").select("*").limit(500),
     ]);
 
-  if (oErr) return fail(500, "Could not load orders.", oErr.message);
-  if (iErr) return fail(500, "Could not load order items.", iErr.message);
-  if (sErr) return fail(500, "Could not load inventory.", sErr.message);
+  if (oErr) {
+    console.error("[Summary Error] Could not load orders:", oErr.message);
+    return fail(500, "Could not load orders.");
+  }
+  if (iErr) {
+    console.error("[Summary Error] Could not load order items:", iErr.message);
+    return fail(500, "Could not load order items.");
+  }
+  if (sErr) {
+    console.error("[Summary Error] Could not load inventory:", sErr.message);
+    return fail(500, "Could not load inventory.");
+  }
 
   const rows = (orders ?? []).filter((o) => o.status !== "cancelled");
   const n = (v: unknown) => Number(v ?? 0);

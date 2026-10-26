@@ -57,12 +57,19 @@ export function isValidPhone(phone: string) {
   return digits.length >= 10 && digits.length <= 15;
 }
 
-/** Generate a human-friendly order number, e.g. BB-8F3K2 */
+/** Generate a cryptographically secure, human-friendly order number, e.g. BB-8F3K2 */
 export function orderNumber() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(5);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < 5; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
   let out = "";
-  for (let i = 0; i < 5; i++)
-    out += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 5; i++) {
+    out += chars[bytes[i] % chars.length];
+  }
   return `BB-${out}`;
 }
 

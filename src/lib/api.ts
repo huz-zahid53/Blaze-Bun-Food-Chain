@@ -1,6 +1,7 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { isDbConfigured } from "@/lib/db";
 
 /** Shared response + auth helpers for the /api route handlers. */
@@ -26,25 +27,23 @@ export function notConfigured() {
   );
 }
 
+
 /**
- * Admin gate. Compares against the ADMIN_TOKEN env secret using a
- * timing-safe-ish constant-length comparison.
+ * Admin gate. Compares against the ADMIN_TOKEN env secret using constant-time
+ * comparison over fixed-length SHA-256 digests.
+ *
+ * Accepts credentials ONLY via the x-admin-token request header (never via URL query params).
  */
 export function isAdminAuthorized(req: Request): boolean {
   const secret = process.env.ADMIN_TOKEN?.trim();
   if (!secret) return false; // no secret configured => admin API is closed
 
-  const provided =
-    req.headers.get("x-admin-token") ??
-    new URL(req.url).searchParams.get("token") ??
-    "";
+  const provided = req.headers.get("x-admin-token")?.trim() ?? "";
+  if (!provided) return false;
 
-  if (provided.length !== secret.length) return false;
-  let diff = 0;
-  for (let i = 0; i < secret.length; i++) {
-    diff |= provided.charCodeAt(i) ^ secret.charCodeAt(i);
-  }
-  return diff === 0;
+  const a = createHash("sha256").update(provided).digest();
+  const b = createHash("sha256").update(secret).digest();
+  return timingSafeEqual(a, b);
 }
 
 /** Trims and caps a string field from an untrusted request body. */

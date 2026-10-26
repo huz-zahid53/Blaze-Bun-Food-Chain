@@ -58,6 +58,9 @@ export async function POST(req: Request) {
     .select("id, kind, status, created_at")
     .single();
 
-  if (error) return fail(500, "Could not save the enquiry.", error.message);
+  if (error) {
+    console.error("[Enquiries Error] Could not save enquiry:", error.message);
+    return fail(500, "Could not save the enquiry.");
+  }
   return ok({ received: true, id: data.id }, { status: 201 });
 }

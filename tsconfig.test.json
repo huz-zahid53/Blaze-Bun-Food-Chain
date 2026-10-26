@@ -14,7 +14,6 @@
   "include": [
     "src/store/useStore.ts",
     "src/lib/pricing.ts",
-    "src/lib/payments/**/*.ts",
     "src/config/brand.ts",
     "src/lib/utils.ts",
     "src/data/menu.ts",

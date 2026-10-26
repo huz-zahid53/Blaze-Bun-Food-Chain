@@ -23,12 +23,13 @@ export function Testimonials() {
         className="object-cover opacity-20"
       />
       {/* Light legibility wash */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/85 to-white/95" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/95 via-white/85 to-white/95" />
       <div className="pointer-events-none absolute inset-0 opacity-[0.03] grain" />
 
       {/* Dot-matrix texture */}
       <DotGridOverlay tone="light" />
-      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+
+      <div className="relative z-10 mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="flex flex-col items-center text-center">
             <span className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.28em] text-ember">
@@ -50,7 +51,7 @@ export function Testimonials() {
         </Reveal>
       </div>
 
-      <Reveal delay={0.1}>
+      <Reveal delay={0.1} className="relative z-10">
         <div className="mt-9 space-y-4">
           <MarqueeRow items={rowA} direction="normal" />
           <MarqueeRow items={rowB} direction="reverse" />

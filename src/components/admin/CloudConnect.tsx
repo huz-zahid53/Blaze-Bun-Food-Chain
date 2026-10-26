@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import {
   advanceOrderStatus,
-  confirmOrderPayment,
   ApiError,
   fetchAdminOrders,
   fetchAdminSummary,
@@ -241,7 +240,6 @@ ADMIN_TOKEN=pick-a-long-random-secret`}
                     <th className="px-3 py-3 font-black">Type</th>
                     <th className="px-3 py-3 font-black">Branch</th>
                     <th className="px-3 py-3 text-right font-black">Total</th>
-                    <th className="px-3 py-3 font-black">Payment</th>
                     <th className="px-3 py-3 font-black">Status</th>
                     <th className="px-5 py-3 text-right font-black">Action</th>
                   </tr>
@@ -269,64 +267,22 @@ ADMIN_TOKEN=pick-a-long-random-secret`}
                         {formatPKR(Number(o.total))}
                       </td>
                       <td className="px-3 py-3">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[12px] font-semibold text-charcoal truncate max-w-[130px]">
-                            {o.payment_label ?? o.payment_method}
-                          </span>
-                          {o.payment_status === "paid" ? (
-                            <span className="inline-flex items-center gap-1 w-fit rounded-full bg-fresh/15 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-green-700">
-                              ✓ Paid {o.is_simulated ? "(Demo)" : ""}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 w-fit rounded-full bg-amber-500/15 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-amber-800">
-                              Unpaid (Doorstep)
-                            </span>
-                          )}
-                          {o.settled_at && (
-                            <span className="text-[10px] text-slate-brand">
-                              Settled by {o.settled_by ?? "staff"}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3">
                         <span className="inline-flex rounded-full bg-charcoal/6 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-charcoal">
                           {o.status}
                         </span>
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {o.payment_status === "unpaid" && o.status !== "cancelled" && (
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                void act(() =>
-                                  confirmOrderPayment(
-                                    token.trim(),
-                                    o.order_number,
-                                    "POS Staff",
-                                    "Doorstep collection confirmed by staff",
-                                  ),
-                                )
-                              }
-                              title="Confirm cash or POS payment collection"
-                              className="rounded-full bg-fresh px-3 py-1.5 text-[10.5px] font-black uppercase tracking-wider text-white transition-colors hover:bg-green-700 disabled:opacity-50"
-                            >
-                              Settle {o.payment_method === "cash_on_card" ? "POS" : "Cash"}
-                            </button>
-                          )}
-                          {o.status !== "delivered" && o.status !== "cancelled" && (
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                void act(() => advanceOrderStatus(token.trim(), o.order_number))
-                              }
-                              className="rounded-full bg-ember px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-white transition-colors hover:bg-charcoal disabled:opacity-50"
-                            >
-                              Advance
-                            </button>
-                          )}
-                        </div>
+                        {o.status !== "delivered" && o.status !== "cancelled" && (
+                          <button
+                            disabled={busy}
+                            onClick={() =>
+                              void act(() => advanceOrderStatus(token.trim(), o.order_number))
+                            }
+                            className="rounded-full bg-ember px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white transition-colors hover:bg-charcoal disabled:opacity-50"
+                          >
+                            Advance
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

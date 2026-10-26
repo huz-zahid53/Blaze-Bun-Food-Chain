@@ -50,8 +50,7 @@ export type OrderStatus =
   | "on-the-flame"
   | "out-for-delivery"
   | "ready-for-pickup"
-  | "delivered"
-  | "cancelled";
+  | "delivered";
 
 export interface OrderEvent {
   label: string;
@@ -75,9 +74,6 @@ export interface PlacedOrder {
   total: number;
   payment: string;
   paymentLabel: string;
-  paymentStatus?: "unpaid" | "pending" | "paid" | "failed" | "refunded";
-  paymentReference?: string;
-  isSimulated?: boolean;
   branchId: string | null;
   branchName: string;
   etaMinutes: number;
@@ -129,13 +125,6 @@ export interface ServerOrderConfirmation {
   id?: string;
   number?: string;
   loyaltyEarned?: number;
-  payment?: {
-    status: "unpaid" | "pending" | "paid" | "failed" | "refunded";
-    reference: string;
-    isSimulated: boolean;
-    message: string;
-    method: string;
-  };
   totals?: Partial<
     Pick<
       PlacedOrder,
@@ -230,7 +219,6 @@ interface StoreState {
   ) => PlacedOrder;
   advanceOrder: (id: string) => void;
   cancelOrder: (id: string) => void;
-  settleOrderPayment: (id: string, settledBy?: string) => void;
 
   /* --- Loyalty --- */
   loyaltyPoints: number;
@@ -384,15 +372,9 @@ export const useStore = create<StoreState>()(
       placeOrder: (payload, server) => {
         const now = new Date().toISOString();
         const isDelivery = payload.type === "delivery";
-        const isDeliveryPay = payload.payment === "cod" || payload.payment === "cash_on_card";
-        const paymentLabelEvent = isDeliveryPay
-          ? (payload.payment === "cash_on_card" ? "Pay card at delivery" : "Pay cash at delivery")
-          : (server?.payment?.isSimulated ? "Payment simulated (demo)" : "Payment confirmed");
-        const paymentDone = !isDeliveryPay && (server?.payment?.status === "paid" || !server?.payment);
-
         const base: OrderEvent[] = [
           { label: "Order placed", at: now, done: true },
-          { label: paymentLabelEvent, at: paymentDone ? now : "", done: paymentDone },
+          { label: "Payment confirmed", at: now, done: true },
           { label: "Sent to kitchen", at: now, done: false },
           { label: "On the flame", at: "", done: false },
           isDelivery
@@ -409,9 +391,6 @@ export const useStore = create<StoreState>()(
           number: server?.number ?? orderNumber(),
           createdAt: now,
           status: "placed",
-          paymentStatus: server?.payment?.status ?? (isDeliveryPay ? "unpaid" : "paid"),
-          paymentReference: server?.payment?.reference,
-          isSimulated: server?.payment?.isSimulated ?? !isDeliveryPay,
           timeline: base,
           loyaltyEarned:
             server?.loyaltyEarned ??
@@ -460,26 +439,8 @@ export const useStore = create<StoreState>()(
       cancelOrder: (id) =>
         set({
           orders: get().orders.map((o) =>
-            o.id === id || o.number === id ? { ...o, status: "cancelled" } : o,
+            o.id === id ? { ...o, status: "delivered" as OrderStatus } : o,
           ),
-        }),
-
-      settleOrderPayment: (id, settledBy) =>
-        set({
-          orders: get().orders.map((o) => {
-            if (o.id !== id && o.number !== id) return o;
-            if (o.paymentStatus === "paid" || o.status === "cancelled") return o;
-            const now = new Date().toISOString();
-            return {
-              ...o,
-              paymentStatus: "paid",
-              timeline: o.timeline.map((t) =>
-                t.label.toLowerCase().includes("pay ") || t.label.toLowerCase().includes("payment")
-                  ? { ...t, label: `${o.paymentLabel} (Settled)`, done: true, at: now }
-                  : t,
-              ),
-            };
-          }),
         }),
 
       loyaltyPoints: 0,

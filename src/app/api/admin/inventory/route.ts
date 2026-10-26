@@ -9,7 +9,10 @@ export async function GET(req: Request) {
   if (!isDbConfigured) return notConfigured();
 
   const { data, error } = await db().from("inventory").select("*").order("item_slug");
-  if (error) return fail(500, "Could not load inventory.", error.message);
+  if (error) {
+    console.error("[Inventory Error] Load failed:", error.message);
+    return fail(500, "Could not load inventory.");
+  }
   return ok({ inventory: data ?? [] });
 }
 
@@ -52,6 +55,9 @@ export async function PATCH(req: Request) {
     .select("*")
     .single();
 
-  if (error) return fail(500, "Could not update inventory.", error.message);
+  if (error) {
+    console.error("[Inventory Error] Update failed:", error.message);
+    return fail(500, "Could not update inventory.");
+  }
   return ok(data);
 }

@@ -4,12 +4,37 @@ import { peekGuestToken } from "@/lib/guest-token";
 
 export const dynamic = "force-dynamic";
 
-const ADVANCE: Record<string, string> = {
+const STATUSES = [
+  "placed",
+  "confirmed",
+  "preparing",
+  "on-the-flame",
+  "out-for-delivery",
+  "ready-for-pickup",
+  "delivered",
+  "cancelled",
+] as const;
+
+type OrderStatus = (typeof STATUSES)[number];
+
+const ADVANCE: Record<string, OrderStatus> = {
   placed: "confirmed",
   confirmed: "preparing",
   preparing: "on-the-flame",
   "on-the-flame": "out-for-delivery",
   "out-for-delivery": "delivered",
+};
+
+/** Permitted lifecycle transitions per current state */
+const VALID_TRANSITIONS: Record<string, readonly OrderStatus[]> = {
+  placed: ["confirmed", "cancelled"],
+  confirmed: ["preparing", "cancelled"],
+  preparing: ["on-the-flame", "cancelled"],
+  "on-the-flame": ["out-for-delivery", "ready-for-pickup", "cancelled"],
+  "out-for-delivery": ["delivered", "cancelled"],
+  "ready-for-pickup": ["delivered", "cancelled"],
+  delivered: [],
+  cancelled: [],
 };
 
 /**
@@ -30,7 +55,10 @@ export async function GET(
     .eq("order_number", number)
     .maybeSingle();
 
-  if (error) return fail(500, "Could not read the order.", error.message);
+  if (error) {
+    console.error("[Orders Error] Could not read order:", error.message);
+    return fail(500, "Could not read the order.");
+  }
   if (!order) return fail(404, "No order with that number.");
 
   const token = await peekGuestToken();
@@ -46,7 +74,10 @@ export async function GET(
     .eq("order_id", order.id)
     .order("position", { ascending: true });
 
-  if (itemsErr) return fail(500, "Could not read order items.", itemsErr.message);
+  if (itemsErr) {
+    console.error("[Orders Error] Could not read order items:", itemsErr.message);
+    return fail(500, "Could not read order items.");
+  }
 
   return ok({ order, items: items ?? [] });
 }
@@ -61,7 +92,7 @@ export async function PATCH(
 ) {
   // Authorise before revealing anything about server configuration.
   if (!isAdminAuthorized(req)) {
-    return fail(401, "Admin token required to change order status or settle payment.");
+    return fail(401, "Admin token required to change order status.");
   }
   if (!isDbConfigured) return notConfigured();
 
@@ -76,92 +107,71 @@ export async function PATCH(
   const client = db();
   const { data: current, error: readErr } = await client
     .from("orders")
-    .select(
-      "id, order_number, status, order_type, payment_method, payment_status, total, is_simulated, settled_at, settled_by",
-    )
+    .select("id, status, order_type")
     .eq("order_number", number)
     .maybeSingle();
 
-  if (readErr) return fail(500, "Could not read the order.", readErr.message);
+  if (readErr) {
+    console.error("[Orders Error] Read current order failed:", readErr.message);
+    return fail(500, "Could not read the order.");
+  }
   if (!current) return fail(404, "No order with that number.");
 
-  const updatePayload: Record<string, unknown> = {};
-
-  // --- Payment settlement handling (COD & Cash on Card) ---
-  const wantsPaymentConfirm =
-    body?.confirm_payment === true || body?.payment_status === "paid";
-  const explicitPaymentStatus = str(body?.payment_status, 20);
-
-  if (wantsPaymentConfirm) {
-    if (current.status === "cancelled") {
-      return fail(400, "Cannot settle payment for a cancelled order.");
-    }
-    if (current.payment_status === "paid") {
-      return fail(409, "Payment for this order has already been settled.");
-    }
-    const settledAt = new Date().toISOString();
-    const settledBy = str(body?.settled_by, 60) || "admin-pos";
-
-    updatePayload.payment_status = "paid";
-    updatePayload.settled_at = settledAt;
-    updatePayload.settled_by = settledBy;
-
-    // Log the settlement attempt in the audit ledger
-    await client.from("payment_attempts").insert({
-      order_id: current.id,
-      method: current.payment_method ?? "delivery",
-      mode: "delivery",
-      status: "paid",
-      reference: `SETTLE-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
-      amount: current.total,
-      is_simulated: false,
-      provider_data: {
-        settled_by: settledBy,
-        settled_at: settledAt,
-        method: current.payment_method,
-        note: str(body?.note, 200) || "Doorstep collection confirmed by staff",
-      },
-    });
-  } else if (
-    explicitPaymentStatus &&
-    explicitPaymentStatus !== current.payment_status
-  ) {
-    return fail(
-      400,
-      `Invalid payment transition from '${current.payment_status}' to '${explicitPaymentStatus}'. Only settlement to 'paid' is permitted.`,
-    );
+  // Terminal states cannot be altered or advanced
+  if (current.status === "delivered" || current.status === "cancelled") {
+    return fail(400, `Cannot modify an order that is already ${current.status}.`);
   }
 
-  // --- Fulfillment status advancement ---
-  let next = str(body?.status, 30) || null;
+  let next: OrderStatus | null = null;
+
   if (body?.advance) {
     // Pick-up terminates at ready-for-pickup, never out-for-delivery.
     next =
       current.order_type === "pickup" && current.status === "on-the-flame"
         ? "ready-for-pickup"
-        : (ADVANCE[current.status] ?? current.status);
+        : (ADVANCE[current.status] ?? null);
+
+    if (!next) {
+      return fail(400, `Order in status '${current.status}' cannot be advanced further.`);
+    }
+  } else if (body?.status !== undefined) {
+    const rawStatus = str(body?.status, 30);
+    if (!(STATUSES as readonly string[]).includes(rawStatus)) {
+      return fail(400, `Invalid order status: ${rawStatus}`);
+    }
+
+    next = rawStatus as OrderStatus;
+    if (next === current.status) {
+      return fail(400, `Order is already in status '${next}'.`);
+    }
+
+    // Verify pick-up compatibility
+    if (current.order_type === "pickup" && next === "out-for-delivery") {
+      return fail(400, "Pick-up orders cannot be transitioned to out-for-delivery.");
+    }
+
+    // Enforce legitimate state-machine transition
+    const allowed = VALID_TRANSITIONS[current.status] ?? [];
+    if (!allowed.includes(next)) {
+      return fail(
+        400,
+        `Invalid status transition from '${current.status}' to '${next}'. Allowed: ${allowed.join(", ") || "none"}.`,
+      );
+    }
   }
 
-  if (next) {
-    updatePayload.status = next;
-  }
-
-  if (Object.keys(updatePayload).length === 0) {
-    return fail(
-      400,
-      "Provide `status`, `advance: true`, or `confirm_payment: true`.",
-    );
-  }
+  if (!next) return fail(400, "Provide valid `status` or `advance: true`.");
 
   const { data: updated, error } = await client
     .from("orders")
-    .update(updatePayload)
+    .update({ status: next })
     .eq("id", current.id)
-    .select(
-      "order_number, status, payment_status, settled_at, settled_by, updated_at",
-    )
+    .select("order_number, status, updated_at")
     .single();
 
-  if (error) return fail(500, "Could not update the order.", error.message);
+  if (error) {
+    console.error("[Orders Error] Failed to update order status:", error.message);
+    return fail(500, "Could not update the order.");
+  }
   return ok(updated);
 }

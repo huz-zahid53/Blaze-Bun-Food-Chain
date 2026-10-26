@@ -59,7 +59,7 @@ export interface HealthReport {
   status: "cloud" | "local-fallback";
   configured: boolean;
   missing: string[];
-  url: string | null;
+  url?: string | null;
   time: string;
 }
 
@@ -102,14 +102,12 @@ export async function clearGuestState(): Promise<void> {
 /* ------------------------------------------------------------------ orders */
 
 export interface CreateOrderInput {
-  number?: string;
   type: "delivery" | "pickup" | "catering";
   lines: unknown[];
   couponCode?: string | null;
   tip?: number;
   payment?: string;
   paymentLabel?: string;
-  demoOutcome?: "success" | "failure" | "cancelled";
   branchId?: string | null;
   branchName?: string;
   /** Delivery zone id (delivery orders only). Validated server-side. */
@@ -133,13 +131,6 @@ export interface CreateOrderResult {
   status: string;
   total: number;
   placedAt: string;
-  payment?: {
-    status: "unpaid" | "pending" | "paid" | "failed" | "refunded";
-    reference: string;
-    isSimulated: boolean;
-    message: string;
-    method: string;
-  };
   totals: {
     subtotal: number;
     itemCount: number;
@@ -228,23 +219,6 @@ export async function setOrderStatus(token: string, number: string, status: stri
     method: "PATCH",
     headers: adminHeaders(token),
     body: JSON.stringify({ status }),
-  });
-}
-
-export async function confirmOrderPayment(
-  token: string,
-  number: string,
-  settledBy?: string,
-  note?: string,
-) {
-  return call(`/api/orders/${encodeURIComponent(number)}`, {
-    method: "PATCH",
-    headers: adminHeaders(token),
-    body: JSON.stringify({
-      confirm_payment: true,
-      settled_by: settledBy,
-      note,
-    }),
   });
 }
 
