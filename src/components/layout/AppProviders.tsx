@@ -10,6 +10,7 @@ import {
 } from "@/lib/cloud";
 import { CartDrawer } from "./CartDrawer";
 import { OrderFlowModal } from "./OrderFlowModal";
+import { PromoPopup } from "./PromoPopup";
 import { ToastHost } from "@/components/ui/Toast";
 import { FloatingCart } from "@/components/ui/FloatingCart";
 import { CustomCursor } from "@/components/ui/CustomCursor";
@@ -154,6 +155,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
       {children}
       <CartDrawer />
       <OrderFlowModal />
+      <PromoPopup />
       <FloatingCart />
       <ToastHost />
       <CustomCursor />
